@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.cristiano.flashlang.data.model.DeckListItem
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit, onDeckClick: (Long) -> Unit) {
     val decks by viewModel.decks.collectAsState()
     var deckToDelete by remember { mutableStateOf<DeckListItem?>(null) }
 
@@ -55,7 +55,7 @@ fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(decks, key = { it.deck.id }) { item ->
-                    DeckRow(item = item, onDelete = { deckToDelete = item })
+                    DeckRow(item = item, onDelete = { deckToDelete = item }, onClick = { onDeckClick(item.deck.id) })
                 }
             }
         }
@@ -75,8 +75,8 @@ fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit) {
 }
 
 @Composable
-private fun DeckRow(item: DeckListItem, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit) {
+    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
