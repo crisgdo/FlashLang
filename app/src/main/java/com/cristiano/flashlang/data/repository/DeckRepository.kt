@@ -28,6 +28,20 @@ class DeckRepository(private val deckDao: DeckDao) {
 
     suspend fun getDecks(): List<Deck> = deckDao.getDecks()
 
+    suspend fun findDeckByName(name: String): Deck? =
+        deckDao.getDecks().firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }
+
+    suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {
+        val createdAt = System.currentTimeMillis()
+        deckDao.replaceDeck(
+            deckId,
+            deck,
+            cards.map { card ->
+                card.copy(id = 0, deckId = deckId, easeFactor = 2.5, intervalDays = 0, repetitions = 0, dueAt = createdAt)
+            },
+        )
+    }
+
     fun observeCards(deckId: Long): Flow<List<Card>> = deckDao.observeCards(deckId)
 
     suspend fun getCards(deckId: Long): List<Card> = deckDao.getCards(deckId)

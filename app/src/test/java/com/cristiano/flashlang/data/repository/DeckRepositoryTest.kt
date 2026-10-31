@@ -94,6 +94,21 @@ class DeckRepositoryTest {
             if (index >= 0) cards[index] = card
         }
 
+        override suspend fun deleteCardsForDeck(deckId: Long) {
+            cards.removeAll { it.deckId == deckId }
+        }
+
+        override suspend fun updateDeckContent(deckId: Long, name: String, language: String) {
+            val index = decks.indexOfFirst { it.id == deckId }
+            if (index >= 0) decks[index] = decks[index].copy(name = name, language = language)
+        }
+
+        override suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {
+            updateDeckContent(deckId, deck.name, deck.language)
+            deleteCardsForDeck(deckId)
+            insertCards(cards.map { it.copy(id = 0, deckId = deckId) })
+        }
+
         override suspend fun deleteDeck(deckId: Long) {
             decks.removeAll { it.id == deckId }
             cards.removeAll { it.deckId == deckId }

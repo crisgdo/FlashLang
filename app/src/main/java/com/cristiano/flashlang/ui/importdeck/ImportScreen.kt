@@ -1,5 +1,7 @@
 package com.cristiano.flashlang.ui.importdeck
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.RadioButton
@@ -27,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,15 +39,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.AnnotatedString
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack: () -> Unit) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     var selectedLanguage by remember { mutableStateOf("inglês") }
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val documentPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                val content = runCatching {
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                            ?: error("Arquivo vazio")
+                    }
+                }
+                content.onSuccess(viewModel::onJsonChanged).onFailure { viewModel.onFileReadError() }
+            }
+        }
+    }
     LaunchedEffect(state.imported) {
         if (state.imported) onImportSuccess()
     }
@@ -74,6 +94,11 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Copiar prompt") }
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
+            Button(
+                onClick = { documentPicker.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
+                enabled = !state.isSaving,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Escolher arquivo") }
             OutlinedTextField(
                 value = state.jsonText,
                 onValueChange = viewModel::onJsonChanged,
@@ -93,5 +118,22 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
                 else Text("Importar")
             }
         }
+    }
+
+    state.duplicateDeckName?.let { name ->
+        AlertDialog(
+            onDismissRequest = { viewModel.resolveDuplicate(DuplicateAction.CANCEL) },
+            title = { Text("Baralho já existe") },
+            text = { Text("Já existe um baralho chamado \"$name\". O que deseja fazer?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.REPLACE) }) { Text("Substituir") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.KEEP_BOTH) }) { Text("Manter os dois") }
+                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.CANCEL) }) { Text("Cancelar") }
+                }
+            },
+        )
     }
 }

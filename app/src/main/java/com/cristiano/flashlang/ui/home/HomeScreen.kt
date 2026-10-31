@@ -30,7 +30,12 @@ import androidx.compose.ui.unit.dp
 import com.cristiano.flashlang.data.model.DeckListItem
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit, onDeckClick: (Long) -> Unit) {
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onImportClick: () -> Unit,
+    onDeckClick: (Long) -> Unit,
+    onExportClick: (Long) -> Unit,
+) {
     val decks by viewModel.decks.collectAsState()
     var deckToDelete by remember { mutableStateOf<DeckListItem?>(null) }
 
@@ -55,7 +60,12 @@ fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit, onDeckClick:
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(decks, key = { it.deck.id }) { item ->
-                    DeckRow(item = item, onDelete = { deckToDelete = item }, onClick = { onDeckClick(item.deck.id) })
+                    DeckRow(
+                        item = item,
+                        onDelete = { deckToDelete = item },
+                        onClick = { onDeckClick(item.deck.id) },
+                        onExport = { onExportClick(item.deck.id) },
+                    )
                 }
             }
         }
@@ -75,7 +85,7 @@ fun HomeScreen(viewModel: HomeViewModel, onImportClick: () -> Unit, onDeckClick:
 }
 
 @Composable
-private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit) {
+private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit, onExport: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
@@ -86,8 +96,11 @@ private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Uni
                 Text("${languageName(item.deck.language)} · ${item.cardCount} cards", style = MaterialTheme.typography.bodyMedium)
                 Text("${item.pendingCount} para revisar hoje", style = MaterialTheme.typography.bodySmall)
             }
-            IconButton(onClick = onDelete) {
-                Text("🗑", modifier = Modifier.semantics { contentDescription = "Excluir ${item.deck.name}" })
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onExport) { Text("Exportar") }
+                IconButton(onClick = onDelete) {
+                    Text("🗑", modifier = Modifier.semantics { contentDescription = "Excluir ${item.deck.name}" })
+                }
             }
         }
     }

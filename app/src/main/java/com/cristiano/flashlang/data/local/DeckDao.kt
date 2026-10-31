@@ -48,6 +48,19 @@ interface DeckDao {
     @Update
     suspend fun updateCard(card: Card)
 
+    @Query("DELETE FROM cards WHERE deckId = :deckId")
+    suspend fun deleteCardsForDeck(deckId: Long)
+
+    @Query("UPDATE decks SET name = :name, language = :language WHERE id = :deckId")
+    suspend fun updateDeckContent(deckId: Long, name: String, language: String)
+
+    @Transaction
+    suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {
+        updateDeckContent(deckId, deck.name, deck.language)
+        deleteCardsForDeck(deckId)
+        if (cards.isNotEmpty()) insertCards(cards.map { it.copy(id = 0, deckId = deckId) })
+    }
+
     @Query("DELETE FROM decks WHERE id = :deckId")
     suspend fun deleteDeck(deckId: Long)
 }

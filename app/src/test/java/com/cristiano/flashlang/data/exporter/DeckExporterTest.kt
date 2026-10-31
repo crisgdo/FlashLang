@@ -1,0 +1,59 @@
+package com.cristiano.flashlang.data.exporter
+
+import com.cristiano.flashlang.data.importer.DeckImportResult
+import com.cristiano.flashlang.data.importer.DeckImporter
+import com.cristiano.flashlang.data.model.Card
+import com.cristiano.flashlang.data.model.Deck
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class DeckExporterTest {
+    @Test
+    fun exportJsonContainsImportFormatAndExcludesReviewProgress() {
+        val json = DeckExporter.toJson(deck, listOf(card))
+
+        assertTrue(json.contains("\"deckName\""))
+        assertTrue(json.contains("\"termTranslation\""))
+        assertFalse(json.contains("easeFactor"))
+        assertFalse(json.contains("intervalDays"))
+        assertFalse(json.contains("repetitions"))
+        assertFalse(json.contains("dueAt"))
+    }
+
+    @Test
+    fun exportThenImportPreservesDeckAndCardContent() {
+        val exported = DeckExporter.toJson(deck, listOf(card))
+        val imported = DeckImporter().parse(exported)
+
+        assertTrue(imported is DeckImportResult.Success)
+        imported as DeckImportResult.Success
+        assertEquals(deck.name, imported.deck.deckName)
+        assertEquals(deck.language, imported.deck.language)
+        assertEquals(1, imported.deck.cards.size)
+        val importedCard = imported.deck.cards.single()
+        assertEquals(card.term, importedCard.term)
+        assertEquals(card.type, importedCard.type)
+        assertEquals(card.termTranslation, importedCard.termTranslation)
+        assertEquals(card.example, importedCard.example)
+        assertEquals(card.exampleTranslation, importedCard.exampleTranslation)
+    }
+
+    private companion object {
+        val deck = Deck(id = 7, name = "Viagem", language = "en", createdAt = 123)
+        val card = Card(
+            id = 11,
+            deckId = deck.id,
+            term = "ticket",
+            type = "word",
+            termTranslation = "bilhete",
+            example = "I need a ticket.",
+            exampleTranslation = "Eu preciso de um bilhete.",
+            easeFactor = 1.7,
+            intervalDays = 8,
+            repetitions = 3,
+            dueAt = 99_999,
+        )
+    }
+}
