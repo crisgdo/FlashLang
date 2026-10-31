@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cristiano.flashlang.data.importer.DeckImportResult
 import com.cristiano.flashlang.data.importer.DeckImporter
-import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.repository.DeckRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,16 +41,7 @@ class ImportViewModel(
                     try {
                         repository.insertDeck(
                             deck = Deck(name = importedDeck.deckName.trim(), language = importedDeck.language),
-                            cards = importedDeck.cards.map { card ->
-                                Card(
-                                    deckId = 0,
-                                    term = card.term.trim(),
-                                    type = card.type,
-                                    termTranslation = card.termTranslation.trim(),
-                                    example = card.example.trim(),
-                                    exampleTranslation = card.exampleTranslation.trim(),
-                                )
-                            },
+                            cards = importedDeck.cards.map { it.toCard(deckId = 0) },
                         )
                         _state.update { it.copy(isSaving = false, imported = true) }
                     } catch (_: Exception) {

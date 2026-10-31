@@ -28,9 +28,14 @@ class DeckRepositoryTest {
         )
 
         val deckId = repository.insertDeck(deck, listOf(card))
+        val insertedCard = repository.getCards(deckId).single()
 
         assertEquals(1L, deckId)
-        assertEquals(listOf(card.copy(id = 1, deckId = deckId)), repository.getCards(deckId))
+        assertEquals(card.term, insertedCard.term)
+        assertEquals(2.5, insertedCard.easeFactor, 0.0)
+        assertEquals(0, insertedCard.intervalDays)
+        assertEquals(0, insertedCard.repetitions)
+        assertTrue(insertedCard.dueAt <= System.currentTimeMillis())
     }
 
     @Test
@@ -72,11 +77,22 @@ class DeckRepositoryTest {
         }
 
         override fun observeDecks(): Flow<List<Deck>> = MutableStateFlow(decks)
-        override fun observeDecksWithCardCount(): Flow<List<DeckListItem>> =
-            MutableStateFlow(decks.map { deck -> DeckListItem(deck, cards.count { it.deckId == deck.id }) })
+        override fun observeDecksWithCardCount(now: Long): Flow<List<DeckListItem>> =
+            MutableStateFlow(decks.map { deck ->
+                DeckListItem(
+                    deck,
+                    cards.count { it.deckId == deck.id },
+                    cards.count { it.deckId == deck.id && it.dueAt <= now },
+                )
+            })
         override suspend fun getDecks(): List<Deck> = decks.toList()
         override fun observeCards(deckId: Long): Flow<List<Card>> = MutableStateFlow(cards.filter { it.deckId == deckId })
         override suspend fun getCards(deckId: Long): List<Card> = cards.filter { it.deckId == deckId }
+        override suspend fun getDueCards(deckId: Long, now: Long): List<Card> = cards.filter { it.deckId == deckId && it.dueAt <= now }
+        override suspend fun updateCard(card: Card) {
+            val index = cards.indexOfFirst { it.id == card.id }
+            if (index >= 0) cards[index] = card
+        }
 
         override suspend fun deleteDeck(deckId: Long) {
             decks.removeAll { it.id == deckId }

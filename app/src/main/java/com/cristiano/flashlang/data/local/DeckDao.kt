@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckWithCards
@@ -29,8 +30,8 @@ interface DeckDao {
     @Query("SELECT * FROM decks ORDER BY createdAt DESC")
     fun observeDecks(): Flow<List<Deck>>
 
-    @Query("SELECT decks.*, (SELECT COUNT(*) FROM cards WHERE cards.deckId = decks.id) AS cardCount FROM decks ORDER BY createdAt DESC")
-    fun observeDecksWithCardCount(): Flow<List<DeckListItem>>
+    @Query("SELECT decks.*, (SELECT COUNT(*) FROM cards WHERE cards.deckId = decks.id) AS cardCount, (SELECT COUNT(*) FROM cards WHERE cards.deckId = decks.id AND cards.dueAt <= :now) AS pendingCount FROM decks ORDER BY createdAt DESC")
+    fun observeDecksWithCardCount(now: Long): Flow<List<DeckListItem>>
 
     @Query("SELECT * FROM decks ORDER BY createdAt DESC")
     suspend fun getDecks(): List<Deck>
@@ -40,6 +41,12 @@ interface DeckDao {
 
     @Query("SELECT * FROM cards WHERE deckId = :deckId ORDER BY id")
     suspend fun getCards(deckId: Long): List<Card>
+
+    @Query("SELECT * FROM cards WHERE deckId = :deckId AND dueAt <= :now")
+    suspend fun getDueCards(deckId: Long, now: Long): List<Card>
+
+    @Update
+    suspend fun updateCard(card: Card)
 
     @Query("DELETE FROM decks WHERE id = :deckId")
     suspend fun deleteDeck(deckId: Long)

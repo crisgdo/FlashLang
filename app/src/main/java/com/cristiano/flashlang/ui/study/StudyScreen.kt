@@ -7,11 +7,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +26,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +42,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.cristiano.flashlang.data.model.Card as FlashCard
+import com.cristiano.flashlang.data.scheduler.ReviewRating
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -82,39 +87,89 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
         }
     }
 
+    LaunchedEffect(state.errorMessage) {
+        state.errorMessage?.let { snackbarHostState.showSnackbar(it) }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { TopAppBar(title = { Text("Estudar") }, navigationIcon = { TextButton(onClick = onBack) { Text("Voltar") } }) },
     ) { padding ->
-        if (state.cards.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding).padding(24.dp), contentAlignment = Alignment.Center) {
-                Text("Este baralho ainda não tem cards.", textAlign = TextAlign.Center)
+        if (state.isLoading) {
+            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (state.cards.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                if (state.allCards.isEmpty()) {
+                    Text("Este baralho ainda não tem cards.", textAlign = TextAlign.Center)
+                } else {
+                    Text("Você terminou por hoje!", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                    Button(onClick = viewModel::studyAllCards, modifier = Modifier.padding(top = 20.dp)) {
+                        Text("Estudar tudo mesmo assim")
+                    }
+                }
             }
         } else {
-            val card = state.cards[state.currentIndex]
+            val card = if (state.isAllCardsMode) state.cards[state.currentIndex] else state.cards.first()
+            val progress = if (state.isAllCardsMode) {
+                state.currentIndex + 1
+            } else {
+                (state.sessionTotal - state.cards.size + 1).coerceAtMost(state.sessionTotal)
+            }
             Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                Text("${state.currentIndex + 1} / ${state.cards.size}", style = MaterialTheme.typography.titleMedium)
+                Text("$progress / ${if (state.isAllCardsMode) state.cards.size else state.sessionTotal}", style = MaterialTheme.typography.titleMedium)
                 StudyCard(
                     card = card,
                     isFlipped = state.isFlipped,
-                    onClick = viewModel::flipCard,
+                    onClick = { if (!state.isSaving) viewModel.flipCard() },
                     onSpeak = { text -> speak(text) },
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = viewModel::showPrevious, enabled = state.currentIndex > 0, modifier = Modifier.weight(1f)) {
-                        Text("Anterior")
+                if (state.isAllCardsMode) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(onClick = viewModel::showPrevious, enabled = state.currentIndex > 0, modifier = Modifier.weight(1f)) {
+                            Text("Anterior")
+                        }
+                        Button(onClick = viewModel::showNext, enabled = state.currentIndex < state.cards.lastIndex, modifier = Modifier.weight(1f)) {
+                            Text("Próximo")
+                        }
                     }
-                    Button(onClick = viewModel::showNext, enabled = state.currentIndex < state.cards.lastIndex, modifier = Modifier.weight(1f)) {
-                        Text("Próximo")
+                } else if (state.isFlipped) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            RatingButton("Errei", ReviewRating.AGAIN, viewModel, state.isSaving, Modifier.weight(1f))
+                            RatingButton("Difícil", ReviewRating.HARD, viewModel, state.isSaving, Modifier.weight(1f))
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            RatingButton("Bom", ReviewRating.GOOD, viewModel, state.isSaving, Modifier.weight(1f))
+                            RatingButton("Fácil", ReviewRating.EASY, viewModel, state.isSaving, Modifier.weight(1f))
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RatingButton(
+    label: String,
+    rating: ReviewRating,
+    viewModel: StudyViewModel,
+    isSaving: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Button(onClick = { viewModel.rateCurrentCard(rating) }, enabled = !isSaving, modifier = modifier) {
+        Text(label)
     }
 }
 

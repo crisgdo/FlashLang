@@ -7,18 +7,35 @@ import com.cristiano.flashlang.data.model.DeckListItem
 import kotlinx.coroutines.flow.Flow
 
 class DeckRepository(private val deckDao: DeckDao) {
-    suspend fun insertDeck(deck: Deck, cards: List<Card> = emptyList()): Long =
-        deckDao.insertDeckWithCards(deck, cards)
+    suspend fun insertDeck(deck: Deck, cards: List<Card> = emptyList()): Long {
+        val createdAt = System.currentTimeMillis()
+        val newCards = cards.map { card ->
+            card.copy(
+                id = 0,
+                easeFactor = 2.5,
+                intervalDays = 0,
+                repetitions = 0,
+                dueAt = createdAt,
+            )
+        }
+        return deckDao.insertDeckWithCards(deck, newCards)
+    }
 
     fun observeDecks(): Flow<List<Deck>> = deckDao.observeDecks()
 
-    fun observeDecksWithCardCount(): Flow<List<DeckListItem>> = deckDao.observeDecksWithCardCount()
+    fun observeDecksWithCardCount(now: Long = System.currentTimeMillis()): Flow<List<DeckListItem>> =
+        deckDao.observeDecksWithCardCount(now)
 
     suspend fun getDecks(): List<Deck> = deckDao.getDecks()
 
     fun observeCards(deckId: Long): Flow<List<Card>> = deckDao.observeCards(deckId)
 
     suspend fun getCards(deckId: Long): List<Card> = deckDao.getCards(deckId)
+
+    suspend fun getDueCards(deckId: Long, now: Long = System.currentTimeMillis()): List<Card> =
+        deckDao.getDueCards(deckId, now)
+
+    suspend fun updateCard(card: Card) = deckDao.updateCard(card)
 
     suspend fun deleteDeck(deckId: Long) = deckDao.deleteDeck(deckId)
 }

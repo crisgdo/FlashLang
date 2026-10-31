@@ -84,6 +84,7 @@ private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Uni
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(item.deck.name, style = MaterialTheme.typography.titleMedium)
                 Text("${languageName(item.deck.language)} · ${item.cardCount} cards", style = MaterialTheme.typography.bodyMedium)
+                Text("${item.pendingCount} para revisar hoje", style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onDelete) {
                 Text("🗑", modifier = Modifier.semantics { contentDescription = "Excluir ${item.deck.name}" })

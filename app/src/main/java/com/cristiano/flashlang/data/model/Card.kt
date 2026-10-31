@@ -1,6 +1,7 @@
 package com.cristiano.flashlang.data.model
 
 import androidx.room.Entity
+import androidx.room.ColumnInfo
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -25,4 +26,8 @@ data class Card(
     val termTranslation: String,
     val example: String,
     val exampleTranslation: String,
+    @ColumnInfo(defaultValue = "2.5") val easeFactor: Double = 2.5,
+    @ColumnInfo(defaultValue = "0") val intervalDays: Int = 0,
+    @ColumnInfo(defaultValue = "0") val repetitions: Int = 0,
+    @ColumnInfo(defaultValue = "0") val dueAt: Long = System.currentTimeMillis(),
 )
