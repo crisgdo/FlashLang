@@ -5,32 +5,51 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.AnnotatedString
+import kotlinx.coroutines.launch
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack: () -> Unit) {
     val state by viewModel.state.collectAsState()
+    var selectedLanguage by remember { mutableStateOf("inglês") }
+    val clipboardManager = LocalClipboardManager.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     LaunchedEffect(state.imported) {
         if (state.imported) onImportSuccess()
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = { TopAppBar(title = { Text("Importar baralho") }, navigationIcon = {
             androidx.compose.material3.TextButton(onClick = onBack) { Text("Voltar") }
         }) },
@@ -39,6 +58,21 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
             modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Text("Idioma de estudo", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                RadioButton(selected = selectedLanguage == "inglês", onClick = { selectedLanguage = "inglês" })
+                Text("Inglês")
+                androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
+                RadioButton(selected = selectedLanguage == "espanhol", onClick = { selectedLanguage = "espanhol" })
+                Text("Espanhol")
+            }
+            TextButton(
+                onClick = {
+                    clipboardManager.setText(AnnotatedString(buildImportPrompt(selectedLanguage)))
+                    coroutineScope.launch { snackbarHostState.showSnackbar("Prompt copiado!") }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Copiar prompt") }
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
             OutlinedTextField(
                 value = state.jsonText,
