@@ -108,6 +108,32 @@ class StudyViewModel(private val repository: DeckRepository, private val deckId:
         }
     }
 
+    fun refreshCard(cardId: Long) {
+        viewModelScope.launch {
+            val refreshedCard = repository.getCard(cardId)
+            _state.update { current ->
+                val cardStillPresent = refreshedCard != null
+                val updatedCards = if (cardStillPresent) {
+                    current.cards.map { if (it.id == cardId) refreshedCard!! else it }
+                } else {
+                    current.cards.filterNot { it.id == cardId }
+                }
+                val updatedAllCards = if (cardStillPresent) {
+                    current.allCards.map { if (it.id == cardId) refreshedCard!! else it }
+                } else {
+                    current.allCards.filterNot { it.id == cardId }
+                }
+                current.copy(
+                    cards = updatedCards,
+                    allCards = updatedAllCards,
+                    currentIndex = current.currentIndex.coerceAtMost((updatedCards.size - 1).coerceAtLeast(0)),
+                    sessionTotal = if (!cardStillPresent && !current.isAllCardsMode) (current.sessionTotal - 1).coerceAtLeast(updatedCards.size) else current.sessionTotal,
+                    isFlipped = false,
+                )
+            }
+        }
+    }
+
     class Factory(private val repository: DeckRepository, private val deckId: Long) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {

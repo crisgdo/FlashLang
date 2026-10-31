@@ -6,6 +6,9 @@ import androidx.core.content.FileProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -21,6 +24,10 @@ import com.cristiano.flashlang.ui.importdeck.ImportScreen
 import com.cristiano.flashlang.ui.importdeck.ImportViewModel
 import com.cristiano.flashlang.ui.study.StudyScreen
 import com.cristiano.flashlang.ui.study.StudyViewModel
+import com.cristiano.flashlang.ui.manage.ManageCardsScreen
+import com.cristiano.flashlang.ui.manage.ManageCardsViewModel
+import com.cristiano.flashlang.ui.manage.CardEditorScreen
+import com.cristiano.flashlang.ui.manage.CardEditorViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,6 +37,8 @@ private object Routes {
     const val HOME = "home"
     const val IMPORT = "import"
     const val STUDY = "study/{deckId}"
+    const val MANAGE = "manage/{deckId}"
+    const val EDIT_CARD = "editCard/{deckId}/{cardId}"
 }
 
 @Composable
@@ -42,7 +51,7 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
             HomeScreen(
                 homeViewModel,
                 onImportClick = { navController.navigate(Routes.IMPORT) },
-                onDeckClick = { deckId -> navController.navigate("study/$deckId") },
+                onDeckClick = { deckId -> navController.navigate("manage/$deckId") },
                 onExportClick = { deckId ->
                     coroutineScope.launch {
                         try {
@@ -81,7 +90,52 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
         ) { entry ->
             val deckId = requireNotNull(entry.arguments).getLong("deckId")
             val studyViewModel: StudyViewModel = viewModel(factory = StudyViewModel.Factory(repository, deckId))
-            StudyScreen(studyViewModel, onBack = { navController.popBackStack() })
+            val updatedCardId by entry.savedStateHandle.getStateFlow<Long?>("updatedCardId", null).collectAsState()
+            LaunchedEffect(updatedCardId) {
+                updatedCardId?.let {
+                    studyViewModel.refreshCard(it)
+                    entry.savedStateHandle["updatedCardId"] = null
+                }
+            }
+            StudyScreen(
+                studyViewModel,
+                onBack = { navController.popBackStack() },
+                onEditCard = { cardId -> navController.navigate("editCard/$deckId/$cardId") },
+            )
+        }
+        composable(
+            route = Routes.MANAGE,
+            arguments = listOf(navArgument("deckId") { type = NavType.LongType }),
+        ) { entry ->
+            val deckId = requireNotNull(entry.arguments).getLong("deckId")
+            val manageViewModel: ManageCardsViewModel = viewModel(factory = ManageCardsViewModel.Factory(repository, deckId))
+            ManageCardsScreen(
+                viewModel = manageViewModel,
+                onBack = { navController.popBackStack() },
+                onStudy = { navController.navigate("study/$deckId") },
+                onAddCard = { navController.navigate("editCard/$deckId/-1") },
+                onEditCard = { cardId -> navController.navigate("editCard/$deckId/$cardId") },
+            )
+        }
+        composable(
+            route = Routes.EDIT_CARD,
+            arguments = listOf(
+                navArgument("deckId") { type = NavType.LongType },
+                navArgument("cardId") { type = NavType.LongType },
+            ),
+        ) { entry ->
+            val deckId = requireNotNull(entry.arguments).getLong("deckId")
+            val cardId = requireNotNull(entry.arguments).getLong("cardId").takeIf { it >= 0 }
+            val editorViewModel: CardEditorViewModel = viewModel(factory = CardEditorViewModel.Factory(repository, deckId, cardId))
+            CardEditorScreen(
+                viewModel = editorViewModel,
+                isEditing = cardId != null,
+                onBack = { navController.popBackStack() },
+                onSaved = {
+                    if (cardId != null) navController.previousBackStackEntry?.savedStateHandle?.set("updatedCardId", cardId)
+                    navController.popBackStack()
+                },
+            )
         }
     }
 }

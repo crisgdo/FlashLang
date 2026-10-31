@@ -54,6 +54,62 @@ class DeckRepositoryTest {
         assertTrue(repository.getCards(deckId).isEmpty())
     }
 
+    @Test
+    fun addCard_createsPendingCardWithFreshSchedule() = runBlocking {
+        val repository = DeckRepository(FakeDeckDao())
+        val deckId = repository.insertDeck(Deck(name = "Viagem", language = "en"))
+
+        val cardId = repository.addCard(deckId, "gate", "word", "portão", "Go to the gate.", "Vá para o portão.")
+        val card = repository.getCard(cardId)!!
+
+        assertEquals(2.5, card.easeFactor, 0.0)
+        assertEquals(0, card.intervalDays)
+        assertEquals(0, card.repetitions)
+        assertTrue(card.dueAt <= System.currentTimeMillis())
+    }
+
+    @Test
+    fun updateCardContent_preservesSpacedRepetitionState() = runBlocking {
+        val dao = FakeDeckDao()
+        val repository = DeckRepository(dao)
+        val deckId = repository.insertDeck(Deck(name = "Viagem", language = "en"))
+        val cardId = repository.addCard(deckId, "ticket", "word", "bilhete", "Need a ticket.", "Preciso de bilhete.")
+        dao.updateCard(repository.getCard(cardId)!!.copy(easeFactor = 1.7, intervalDays = 12, repetitions = 4, dueAt = 456L))
+
+        repository.updateCardContent(cardId, "boarding pass", "expression", "cartão de embarque", "Show your boarding pass.", "Mostre seu cartão de embarque.")
+        val updated = repository.getCard(cardId)!!
+
+        assertEquals("boarding pass", updated.term)
+        assertEquals("expression", updated.type)
+        assertEquals(1.7, updated.easeFactor, 0.0)
+        assertEquals(12, updated.intervalDays)
+        assertEquals(4, updated.repetitions)
+        assertEquals(456L, updated.dueAt)
+    }
+
+    @Test
+    fun deleteCard_removesOnlySelectedCard() = runBlocking {
+        val repository = DeckRepository(FakeDeckDao())
+        val deckId = repository.insertDeck(Deck(name = "Viagem", language = "en"))
+        val cardId = repository.addCard(deckId, "gate", "word", "portão", "Go to the gate.", "Vá para o portão.")
+        repository.addCard(deckId, "ticket", "word", "bilhete", "Need a ticket.", "Preciso de bilhete.")
+
+        repository.deleteCard(cardId)
+
+        assertEquals(1, repository.getCards(deckId).size)
+        assertTrue(repository.getCard(cardId) == null)
+    }
+
+    @Test
+    fun renameDeck_changesDeckName() = runBlocking {
+        val repository = DeckRepository(FakeDeckDao())
+        val deckId = repository.insertDeck(Deck(name = "Antigo", language = "es"))
+
+        repository.renameDeck(deckId, "Novo nome")
+
+        assertEquals("Novo nome", repository.getDecks().single().name)
+    }
+
     private class FakeDeckDao : DeckDao {
         private val decks = mutableListOf<Deck>()
         private val cards = mutableListOf<Card>()
@@ -68,6 +124,12 @@ class DeckRepositoryTest {
 
         override suspend fun insertCards(cards: List<Card>) {
             cards.forEach { this.cards += it.copy(id = nextCardId++) }
+        }
+
+        override suspend fun insertCard(card: Card): Long {
+            val id = nextCardId++
+            cards += card.copy(id = id)
+            return id
         }
 
         override suspend fun insertDeckWithCards(deck: Deck, cards: List<Card>): Long {
@@ -88,10 +150,15 @@ class DeckRepositoryTest {
         override suspend fun getDecks(): List<Deck> = decks.toList()
         override fun observeCards(deckId: Long): Flow<List<Card>> = MutableStateFlow(cards.filter { it.deckId == deckId })
         override suspend fun getCards(deckId: Long): List<Card> = cards.filter { it.deckId == deckId }
+        override suspend fun getCard(cardId: Long): Card? = cards.firstOrNull { it.id == cardId }
         override suspend fun getDueCards(deckId: Long, now: Long): List<Card> = cards.filter { it.deckId == deckId && it.dueAt <= now }
         override suspend fun updateCard(card: Card) {
             val index = cards.indexOfFirst { it.id == card.id }
             if (index >= 0) cards[index] = card
+        }
+
+        override suspend fun deleteCard(cardId: Long) {
+            cards.removeAll { it.id == cardId }
         }
 
         override suspend fun deleteCardsForDeck(deckId: Long) {
@@ -101,6 +168,11 @@ class DeckRepositoryTest {
         override suspend fun updateDeckContent(deckId: Long, name: String, language: String) {
             val index = decks.indexOfFirst { it.id == deckId }
             if (index >= 0) decks[index] = decks[index].copy(name = name, language = language)
+        }
+
+        override suspend fun renameDeck(deckId: Long, name: String) {
+            val index = decks.indexOfFirst { it.id == deckId }
+            if (index >= 0) decks[index] = decks[index].copy(name = name)
         }
 
         override suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {

@@ -20,6 +20,9 @@ interface DeckDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertCards(cards: List<Card>)
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertCard(card: Card): Long
+
     @Transaction
     suspend fun insertDeckWithCards(deck: Deck, cards: List<Card>): Long {
         val deckId = insertDeck(deck)
@@ -42,17 +45,26 @@ interface DeckDao {
     @Query("SELECT * FROM cards WHERE deckId = :deckId ORDER BY id")
     suspend fun getCards(deckId: Long): List<Card>
 
+    @Query("SELECT * FROM cards WHERE id = :cardId LIMIT 1")
+    suspend fun getCard(cardId: Long): Card?
+
     @Query("SELECT * FROM cards WHERE deckId = :deckId AND dueAt <= :now")
     suspend fun getDueCards(deckId: Long, now: Long): List<Card>
 
     @Update
     suspend fun updateCard(card: Card)
 
+    @Query("DELETE FROM cards WHERE id = :cardId")
+    suspend fun deleteCard(cardId: Long)
+
     @Query("DELETE FROM cards WHERE deckId = :deckId")
     suspend fun deleteCardsForDeck(deckId: Long)
 
     @Query("UPDATE decks SET name = :name, language = :language WHERE id = :deckId")
     suspend fun updateDeckContent(deckId: Long, name: String, language: String)
+
+    @Query("UPDATE decks SET name = :name WHERE id = :deckId")
+    suspend fun renameDeck(deckId: Long, name: String)
 
     @Transaction
     suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {

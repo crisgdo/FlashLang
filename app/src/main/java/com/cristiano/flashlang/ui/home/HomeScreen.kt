@@ -65,6 +65,7 @@ fun HomeScreen(
                         onDelete = { deckToDelete = item },
                         onClick = { onDeckClick(item.deck.id) },
                         onExport = { onExportClick(item.deck.id) },
+                        onManage = { onDeckClick(item.deck.id) },
                     )
                 }
             }
@@ -85,7 +86,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit, onExport: () -> Unit) {
+private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit, onExport: () -> Unit, onManage: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
@@ -97,6 +98,7 @@ private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Uni
                 Text("${item.pendingCount} para revisar hoje", style = MaterialTheme.typography.bodySmall)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onManage) { Text("Gerenciar") }
                 TextButton(onClick = onExport) { Text("Exportar") }
                 IconButton(onClick = onDelete) {
                     Text("🗑", modifier = Modifier.semantics { contentDescription = "Excluir ${item.deck.name}" })

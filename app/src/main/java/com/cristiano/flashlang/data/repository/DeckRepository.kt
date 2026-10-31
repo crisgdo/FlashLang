@@ -46,6 +46,54 @@ class DeckRepository(private val deckDao: DeckDao) {
 
     suspend fun getCards(deckId: Long): List<Card> = deckDao.getCards(deckId)
 
+    suspend fun getCard(cardId: Long): Card? = deckDao.getCard(cardId)
+
+    suspend fun addCard(
+        deckId: Long,
+        term: String,
+        type: String,
+        termTranslation: String,
+        example: String,
+        exampleTranslation: String,
+    ): Long = deckDao.insertCard(
+        Card(
+            deckId = deckId,
+            term = term,
+            type = type,
+            termTranslation = termTranslation,
+            example = example,
+            exampleTranslation = exampleTranslation,
+            easeFactor = 2.5,
+            intervalDays = 0,
+            repetitions = 0,
+            dueAt = System.currentTimeMillis(),
+        ),
+    )
+
+    suspend fun updateCardContent(
+        cardId: Long,
+        term: String,
+        type: String,
+        termTranslation: String,
+        example: String,
+        exampleTranslation: String,
+    ) {
+        val existing = deckDao.getCard(cardId) ?: return
+        deckDao.updateCard(
+            existing.copy(
+                term = term,
+                type = type,
+                termTranslation = termTranslation,
+                example = example,
+                exampleTranslation = exampleTranslation,
+            ),
+        )
+    }
+
+    suspend fun deleteCard(cardId: Long) = deckDao.deleteCard(cardId)
+
+    suspend fun renameDeck(deckId: Long, name: String) = deckDao.renameDeck(deckId, name.trim())
+
     suspend fun getDueCards(deckId: Long, now: Long = System.currentTimeMillis()): List<Card> =
         deckDao.getDueCards(deckId, now)
 

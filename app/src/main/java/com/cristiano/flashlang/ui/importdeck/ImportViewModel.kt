@@ -46,18 +46,22 @@ class ImportViewModel(
             is DeckImportResult.Success -> {
                 _state.update { it.copy(errorMessage = null, isSaving = true) }
                 viewModelScope.launch {
-                    val existing = repository.findDeckByName(result.deck.deckName)
-                    if (existing != null) {
-                        _state.update {
-                            it.copy(
-                                isSaving = false,
-                                duplicateDeckId = existing.id,
-                                duplicateDeckName = existing.name,
-                                pendingDeck = result.deck,
-                            )
+                    try {
+                        val existing = repository.findDeckByName(result.deck.deckName)
+                        if (existing != null) {
+                            _state.update {
+                                it.copy(
+                                    isSaving = false,
+                                    duplicateDeckId = existing.id,
+                                    duplicateDeckName = existing.name,
+                                    pendingDeck = result.deck,
+                                )
+                            }
+                        } else {
+                            saveDeck(result.deck, name = result.deck.deckName)
                         }
-                    } else {
-                        saveDeck(result.deck, name = result.deck.deckName)
+                    } catch (_: Exception) {
+                        _state.update { it.copy(isSaving = false, errorMessage = "Não foi possível verificar os baralhos existentes.") }
                     }
                 }
             }
@@ -77,13 +81,17 @@ class ImportViewModel(
             DuplicateAction.KEEP_BOTH -> {
                 _state.update { it.copy(isSaving = true, duplicateDeckId = null, duplicateDeckName = null, pendingDeck = null) }
                 viewModelScope.launch {
-                    var suffix = 2
-                    var candidate = "${importedDeck.deckName} ($suffix)"
-                    while (repository.findDeckByName(candidate) != null) {
-                        suffix++
-                        candidate = "${importedDeck.deckName} ($suffix)"
+                    try {
+                        var suffix = 2
+                        var candidate = "${importedDeck.deckName} ($suffix)"
+                        while (repository.findDeckByName(candidate) != null) {
+                            suffix++
+                            candidate = "${importedDeck.deckName} ($suffix)"
+                        }
+                        saveDeck(importedDeck, name = candidate)
+                    } catch (_: Exception) {
+                        _state.update { it.copy(isSaving = false, errorMessage = "Não foi possível escolher um nome para o baralho.") }
                     }
-                    saveDeck(importedDeck, name = candidate)
                 }
             }
         }

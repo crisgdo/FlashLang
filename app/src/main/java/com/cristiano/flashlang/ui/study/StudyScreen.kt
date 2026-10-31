@@ -16,6 +16,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -48,8 +50,9 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
+fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long) -> Unit) {
     val state by viewModel.state.collectAsState()
+    var showCardMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -93,7 +96,24 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit) {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { TopAppBar(title = { Text("Estudar") }, navigationIcon = { TextButton(onClick = onBack) { Text("Voltar") } }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Estudar") },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Voltar") } },
+                actions = {
+                    val currentCard = state.cards.getOrNull(if (state.isAllCardsMode) state.currentIndex else 0)
+                    if (currentCard != null) {
+                        androidx.compose.material3.IconButton(onClick = { showCardMenu = true }) { Text("⋮") }
+                        DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Editar card") },
+                                onClick = { showCardMenu = false; onEditCard(currentCard.id) },
+                            )
+                        }
+                    }
+                },
+            )
+        },
     ) { padding ->
         if (state.isLoading) {
             Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
