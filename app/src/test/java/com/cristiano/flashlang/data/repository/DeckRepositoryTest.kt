@@ -4,6 +4,7 @@ import com.cristiano.flashlang.data.local.DeckDao
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckWithCards
+import com.cristiano.flashlang.data.model.DeckListItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -71,6 +72,8 @@ class DeckRepositoryTest {
         }
 
         override fun observeDecks(): Flow<List<Deck>> = MutableStateFlow(decks)
+        override fun observeDecksWithCardCount(): Flow<List<DeckListItem>> =
+            MutableStateFlow(decks.map { deck -> DeckListItem(deck, cards.count { it.deckId == deck.id }) })
         override suspend fun getDecks(): List<Deck> = decks.toList()
         override fun observeCards(deckId: Long): Flow<List<Card>> = MutableStateFlow(cards.filter { it.deckId == deckId })
         override suspend fun getCards(deckId: Long): List<Card> = cards.filter { it.deckId == deckId }

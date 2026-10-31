@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckWithCards
+import com.cristiano.flashlang.data.model.DeckListItem
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -27,6 +28,9 @@ interface DeckDao {
 
     @Query("SELECT * FROM decks ORDER BY createdAt DESC")
     fun observeDecks(): Flow<List<Deck>>
+
+    @Query("SELECT decks.*, (SELECT COUNT(*) FROM cards WHERE cards.deckId = decks.id) AS cardCount FROM decks ORDER BY createdAt DESC")
+    fun observeDecksWithCardCount(): Flow<List<DeckListItem>>
 
     @Query("SELECT * FROM decks ORDER BY createdAt DESC")
     suspend fun getDecks(): List<Deck>

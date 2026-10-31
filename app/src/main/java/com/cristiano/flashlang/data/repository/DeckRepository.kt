@@ -3,6 +3,7 @@ package com.cristiano.flashlang.data.repository
 import com.cristiano.flashlang.data.local.DeckDao
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
+import com.cristiano.flashlang.data.model.DeckListItem
 import kotlinx.coroutines.flow.Flow
 
 class DeckRepository(private val deckDao: DeckDao) {
@@ -10,6 +11,8 @@ class DeckRepository(private val deckDao: DeckDao) {
         deckDao.insertDeckWithCards(deck, cards)
 
     fun observeDecks(): Flow<List<Deck>> = deckDao.observeDecks()
+
+    fun observeDecksWithCardCount(): Flow<List<DeckListItem>> = deckDao.observeDecksWithCardCount()
 
     suspend fun getDecks(): List<Deck> = deckDao.getDecks()
 
