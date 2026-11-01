@@ -13,7 +13,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             FlashLangTheme {
-                FlashLangNavHost((application as FlashLangApplication).deckRepository)
+                val flashLangApplication = application as FlashLangApplication
+                FlashLangNavHost(
+                    repository = flashLangApplication.deckRepository,
+                    userPromptRepository = flashLangApplication.userPromptRepository,
+                )
             }
         }
     }

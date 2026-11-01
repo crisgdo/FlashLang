@@ -1,5 +1,6 @@
 package com.cristiano.flashlang.data.prompts
 
+import com.cristiano.flashlang.data.model.UserPrompt
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,5 +64,26 @@ class PromptBuilderTest {
 
         val vowelPrompt = PromptTemplates.all.first { it.id == "vowel-sounds" }
         assertTrue(canGeneratePrompt(vowelPrompt, PromptInputValues()))
+    }
+
+    @Test
+    fun detectsOwnPromptInputsFromBodyMarkers() {
+        val template = UserPrompt(
+            id = 8,
+            title = "Meu prompt",
+            description = "",
+            body = "{{IDIOMA}} {{TEXTO}} {{LISTA}} {{FOCO}}",
+            generatesDeck = false,
+        ).toPromptTemplate()
+
+        assertTrue(template.needsLanguage)
+        assertFalse(template.generatesDeck)
+        assertEquals(
+            listOf(PromptInputType.TEXT, PromptInputType.LIST, PromptInputType.FOCUS),
+            template.inputs.map { it.type },
+        )
+        assertTrue(template.inputs.first { it.type == PromptInputType.TEXT }.required)
+        assertTrue(template.inputs.first { it.type == PromptInputType.LIST }.required)
+        assertFalse(template.inputs.first { it.type == PromptInputType.FOCUS }.required)
     }
 }

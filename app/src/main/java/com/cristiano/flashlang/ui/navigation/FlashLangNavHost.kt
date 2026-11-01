@@ -9,6 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,6 +20,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.cristiano.flashlang.data.repository.DeckRepository
+import com.cristiano.flashlang.data.repository.UserPromptRepository
+import com.cristiano.flashlang.data.model.UserPrompt
 import com.cristiano.flashlang.data.exporter.DeckExporter
 import com.cristiano.flashlang.ui.home.HomeScreen
 import com.cristiano.flashlang.ui.home.HomeViewModel
@@ -29,8 +34,11 @@ import com.cristiano.flashlang.ui.manage.ManageCardsViewModel
 import com.cristiano.flashlang.ui.manage.CardEditorScreen
 import com.cristiano.flashlang.ui.manage.CardEditorViewModel
 import com.cristiano.flashlang.data.prompts.PromptTemplates
+import com.cristiano.flashlang.data.prompts.toPromptTemplate
 import com.cristiano.flashlang.ui.prompts.PromptsScreen
 import com.cristiano.flashlang.ui.prompts.PromptDetailScreen
+import com.cristiano.flashlang.ui.prompts.UserPromptEditorScreen
+import com.cristiano.flashlang.ui.prompts.UserPromptsViewModel
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -41,13 +49,20 @@ private object Routes {
     const val IMPORT = "import"
     const val PROMPTS = "prompts"
     const val PROMPT_DETAIL = "prompt/{promptId}"
+    const val USER_PROMPT_DETAIL = "myPrompt/detail/{promptId}"
+    const val NEW_USER_PROMPT = "myPrompt/new"
+    const val EDIT_USER_PROMPT = "myPrompt/edit/{promptId}"
     const val STUDY = "study/{deckId}"
     const val MANAGE = "manage/{deckId}"
     const val EDIT_CARD = "editCard/{deckId}/{cardId}"
 }
 
 @Composable
-fun FlashLangNavHost(repository: DeckRepository, navController: NavHostController = rememberNavController()) {
+fun FlashLangNavHost(
+    repository: DeckRepository,
+    userPromptRepository: UserPromptRepository,
+    navController: NavHostController = rememberNavController(),
+) {
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             val homeViewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory(repository))
@@ -93,9 +108,16 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
             )
         }
         composable(Routes.PROMPTS) {
+            val promptsViewModel: UserPromptsViewModel = viewModel(
+                factory = UserPromptsViewModel.Factory(userPromptRepository),
+            )
             PromptsScreen(
+                viewModel = promptsViewModel,
                 onBack = { navController.popBackStack() },
                 onSelectPrompt = { promptId -> navController.navigate("prompt/$promptId") },
+                onOpenUserPrompt = { promptId -> navController.navigate("myPrompt/detail/$promptId") },
+                onCreateUserPrompt = { navController.navigate(Routes.NEW_USER_PROMPT) },
+                onEditUserPrompt = { promptId -> navController.navigate("myPrompt/edit/$promptId") },
             )
         }
         composable(
@@ -109,6 +131,55 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
                     template = template,
                     onBack = { navController.popBackStack() },
                     onImport = { navController.navigate(Routes.IMPORT) },
+                )
+            }
+        }
+        composable(
+            route = Routes.USER_PROMPT_DETAIL,
+            arguments = listOf(navArgument("promptId") { type = NavType.LongType }),
+        ) { entry ->
+            val promptId = requireNotNull(entry.arguments).getLong("promptId")
+            val prompts by userPromptRepository.observeAll().collectAsState(initial = emptyList())
+            val prompt = prompts.firstOrNull { it.id == promptId }
+            if (prompt != null) {
+                PromptDetailScreen(
+                    template = prompt.toPromptTemplate(),
+                    onBack = { navController.popBackStack() },
+                    onImport = { navController.navigate(Routes.IMPORT) },
+                )
+            }
+        }
+        composable(Routes.NEW_USER_PROMPT) {
+            UserPromptEditorScreen(
+                prompt = null,
+                onBack = { navController.popBackStack() },
+                onSave = { title, description, body, generatesDeck ->
+                    val id = userPromptRepository.create(title, description, body, generatesDeck)
+                    navController.navigate("myPrompt/detail/$id") {
+                        popUpTo(Routes.NEW_USER_PROMPT) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(
+            route = Routes.EDIT_USER_PROMPT,
+            arguments = listOf(navArgument("promptId") { type = NavType.LongType }),
+        ) { entry ->
+            val promptId = requireNotNull(entry.arguments).getLong("promptId")
+            var prompt by remember(promptId) { mutableStateOf<UserPrompt?>(null) }
+            var loaded by remember(promptId) { mutableStateOf(false) }
+            LaunchedEffect(promptId) {
+                prompt = userPromptRepository.getById(promptId)
+                loaded = true
+            }
+            if (loaded && prompt != null) {
+                UserPromptEditorScreen(
+                    prompt = prompt,
+                    onBack = { navController.popBackStack() },
+                    onSave = { title, description, body, generatesDeck ->
+                        userPromptRepository.update(promptId, title, description, body, generatesDeck)
+                        navController.popBackStack()
+                    },
                 )
             }
         }

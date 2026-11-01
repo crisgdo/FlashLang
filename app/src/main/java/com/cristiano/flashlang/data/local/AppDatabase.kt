@@ -6,10 +6,12 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
+import com.cristiano.flashlang.data.model.UserPrompt
 
-@Database(entities = [Deck::class, Card::class], version = 3, exportSchema = false)
+@Database(entities = [Deck::class, Card::class, UserPrompt::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
+    abstract fun userPromptDao(): UserPromptDao
 
     companion object {
         val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -26,6 +28,22 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE cards ADD COLUMN ipa TEXT")
                 db.execSQL("ALTER TABLE cards ADD COLUMN note TEXT")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """CREATE TABLE IF NOT EXISTS user_prompts (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        title TEXT NOT NULL,
+                        description TEXT NOT NULL,
+                        body TEXT NOT NULL,
+                        generatesDeck INTEGER NOT NULL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL
+                    )""".trimIndent(),
+                )
             }
         }
     }
