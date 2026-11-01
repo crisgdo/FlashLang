@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class StudyUiState(
+    val deckId: Long = 0,
     val cards: List<Card> = emptyList(),
     val allCards: List<Card> = emptyList(),
     val currentIndex: Int = 0,
@@ -28,7 +29,7 @@ data class StudyUiState(
 )
 
 class StudyViewModel(private val repository: DeckRepository, private val deckId: Long) : ViewModel() {
-    private val _state = MutableStateFlow(StudyUiState())
+    private val _state = MutableStateFlow(StudyUiState(deckId = deckId))
     val state: StateFlow<StudyUiState> = _state.asStateFlow()
 
     init {

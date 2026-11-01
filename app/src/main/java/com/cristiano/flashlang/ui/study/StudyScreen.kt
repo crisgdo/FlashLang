@@ -20,10 +20,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +40,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -69,6 +72,9 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.RecordVoiceOver
+import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.importer.ClozeText
@@ -86,9 +92,23 @@ fun StudyScreen(
     onManageDeck: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    val currentCard = state.cards.getOrNull(if (state.isAllCardsMode) state.currentIndex else 0)
     var showCardMenu by remember { mutableStateOf(false) }
     var showVoiceDialog by remember { mutableStateOf(false) }
+    var showStudyModeDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val deckPreferences = remember(context) {
+        val sharedPreferences = context.getSharedPreferences("flashlang_study_preferences", Context.MODE_PRIVATE)
+        DeckStudyPreferences(
+            object : StudyPreferenceStore {
+                override fun getString(key: String): String? = sharedPreferences.getString(key, null)
+                override fun putString(key: String, value: String) { sharedPreferences.edit().putString(key, value).apply() }
+            },
+        )
+    }
+    var studyMode by remember(state.deckId) { mutableStateOf(deckPreferences.getMode(state.deckId)) }
+    var autoplayEnabled by remember(state.deckId) { mutableStateOf(deckPreferences.isAutoplayEnabled(state.deckId)) }
+    var wordRevealed by remember(state.deckId, currentCard?.id) { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var speechEngineState by remember { mutableStateOf(SpeechEngineState()) }
@@ -110,14 +130,35 @@ fun StudyScreen(
         }
     }
 
-    fun speak(text: String) {
+    DisposableEffect(state.deckId, currentCard?.id, state.currentIndex, speechController) {
+        onDispose { speechController.stop() }
+    }
+
+    LaunchedEffect(
+        state.deckId,
+        currentCard?.id,
+        state.currentIndex,
+        state.isFlipped,
+        studyMode,
+        autoplayEnabled,
+        speechEngineState.isReady,
+    ) {
+        if (!speechEngineState.isReady || !autoplayEnabled || studyMode != StudyMode.PRONUNCIATION) return@LaunchedEffect
+        val card = currentCard ?: return@LaunchedEffect
+        when {
+            card.format == "cloze" && state.isFlipped -> speechController.speak(ClozeText.fillFirstGap(card.example, card.term))
+            card.format == "basic" && !state.isFlipped -> speechController.speak(card.term)
+        }
+    }
+
+    fun speak(text: String, rate: Float? = null) {
         if (!speechEngineState.isReady) {
             if (speechEngineState.initializationFailed) {
                 coroutineScope.launch { snackbarHostState.showSnackbar(VOICE_UNAVAILABLE_MESSAGE) }
             }
             return
         }
-        speechController.speak(text)
+        speechController.speak(text, rate)
     }
 
     LaunchedEffect(speechEngineState.engine, state.language) {
@@ -142,21 +183,39 @@ fun StudyScreen(
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar") }
                 },
                 actions = {
-                    val currentCard = state.cards.getOrNull(if (state.isAllCardsMode) state.currentIndex else 0)
-                    if (currentCard != null) {
+                    if (state.deckId > 0) {
                         IconButton(onClick = { showCardMenu = true }) {
                             Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
                         }
                         DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
+                            currentCard?.let { card ->
+                                DropdownMenuItem(
+                                    text = { Text("Editar card") },
+                                    leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                                    onClick = { showCardMenu = false; onEditCard(card.id) },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Voz") },
+                                    leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
+                                    onClick = { showCardMenu = false; showVoiceDialog = true },
+                                )
+                            }
                             DropdownMenuItem(
-                                text = { Text("Editar card") },
-                                leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                                onClick = { showCardMenu = false; onEditCard(currentCard.id) },
+                                text = { Text("Modo de estudo") },
+                                onClick = { showCardMenu = false; showStudyModeDialog = true },
                             )
                             DropdownMenuItem(
-                                text = { Text("Voz") },
-                                leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
-                                onClick = { showCardMenu = false; showVoiceDialog = true },
+                                text = { Text("Reproduzir automaticamente") },
+                                trailingIcon = {
+                                    Switch(
+                                        checked = autoplayEnabled,
+                                        onCheckedChange = { enabled ->
+                                            autoplayEnabled = enabled
+                                            deckPreferences.setAutoplayEnabled(state.deckId, enabled)
+                                        },
+                                    )
+                                },
+                                onClick = { autoplayEnabled = !autoplayEnabled; deckPreferences.setAutoplayEnabled(state.deckId, autoplayEnabled) },
                             )
                         }
                     }
@@ -204,8 +263,12 @@ fun StudyScreen(
                 StudyCard(
                     card = card,
                     isFlipped = state.isFlipped,
+                    pronunciationMode = studyMode == StudyMode.PRONUNCIATION,
+                    wordRevealed = wordRevealed,
                     onClick = { if (!state.isSaving) viewModel.flipCard() },
                     onSpeak = { text -> speak(text) },
+                    onSpeakSlow = { text -> speak(text, pronunciationSlowRate(speechEngineState.speechRate)) },
+                    onRevealWord = { wordRevealed = true },
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
                 if (state.isAllCardsMode) {
@@ -241,6 +304,39 @@ fun StudyScreen(
                 }
             }
         }
+    }
+
+    if (showStudyModeDialog) {
+        AlertDialog(
+            onDismissRequest = { showStudyModeDialog = false },
+            title = { Text("Modo de estudo") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    StudyMode.entries.forEach { mode ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                studyMode = mode
+                                deckPreferences.setMode(state.deckId, mode)
+                                showStudyModeDialog = false
+                            },
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = studyMode == mode, onClick = {
+                                studyMode = mode
+                                deckPreferences.setMode(state.deckId, mode)
+                                showStudyModeDialog = false
+                            })
+                            Text(
+                                if (mode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (studyMode == mode) Icon(Icons.Outlined.Check, contentDescription = "Selecionado")
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showStudyModeDialog = false }) { Text("Fechar") } },
+        )
     }
 
     if (showVoiceDialog) {
@@ -325,7 +421,18 @@ private fun RatingButton(
 }
 
 @Composable
-private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, onSpeak: (String) -> Unit, modifier: Modifier = Modifier) {
+@OptIn(ExperimentalLayoutApi::class)
+private fun StudyCard(
+    card: FlashCard,
+    isFlipped: Boolean,
+    pronunciationMode: Boolean,
+    wordRevealed: Boolean,
+    onClick: () -> Unit,
+    onSpeak: (String) -> Unit,
+    onSpeakSlow: (String) -> Unit,
+    onRevealWord: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val rotation by animateFloatAsState(if (isFlipped) 180f else 0f, label = "cardFlip")
     Card(
         modifier = modifier.graphicsLayer { rotationY = rotation }.clickable(onClick = onClick),
@@ -387,6 +494,28 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                         }
                     }
                 }
+            } else if (rotation < 90f && pronunciationMode) {
+                if (wordRevealed) {
+                    Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                }
+                FilledTonalButton(onClick = { onSpeak(card.term) }) {
+                    Icon(Icons.Outlined.VolumeUp, contentDescription = "Ouvir termo", modifier = Modifier.size(48.dp))
+                }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(onClick = { onSpeak(card.term) }) { Text("Ouvir de novo", maxLines = 1, softWrap = false) }
+                    TextButton(onClick = { onSpeakSlow(card.term) }) { Text("Ouvir devagar", maxLines = 1, softWrap = false) }
+                }
+                if (!wordRevealed) {
+                    TextButton(onClick = onRevealWord) {
+                        Icon(Icons.Outlined.Visibility, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Mostrar palavra")
+                    }
+                }
+                Text("Repita em voz alta e toque no card para conferir", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
             } else if (rotation < 90f) {
                 Text(if (card.type == "word") "Palavra" else "Expressão", style = MaterialTheme.typography.labelLarge)
                 IconButton(
@@ -395,6 +524,29 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                 ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
                 Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                 Text("Toque para virar", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
+            } else if (pronunciationMode) {
+                Column(
+                    modifier = Modifier.graphicsLayer { rotationY = 180f },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Text(card.term, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                    card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
+                        Text(ipa, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
+                    card.note?.takeIf(String::isNotBlank)?.let { note ->
+                        Text(note, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                    }
+                    Text(card.termTranslation, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(card.example, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                        IconButton(
+                            onClick = { onSpeak(card.example) },
+                            modifier = Modifier.semantics { contentDescription = "Ouvir frase de exemplo" },
+                        ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
+                    }
+                    Text(card.exampleTranslation, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                }
             } else {
                 Column(
                     modifier = Modifier.graphicsLayer { rotationY = 180f },
@@ -504,12 +656,12 @@ private class SpeechEngineController(
         publishReadyState()
     }
 
-    fun speak(text: String) {
+    fun speak(text: String, rate: Float? = null) {
         val textToSpeech = engine ?: return
         val locale = studyLocale(language)
         if (textToSpeech.isLanguageAvailable(locale) < TextToSpeech.LANG_AVAILABLE) return
         selectedVoice?.let(textToSpeech::setVoice) ?: textToSpeech.setLanguage(locale)
-        textToSpeech.setSpeechRate(speechRate)
+        textToSpeech.setSpeechRate(rate ?: speechRate)
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "flashlang-study")
     }
 
@@ -528,6 +680,10 @@ private class SpeechEngineController(
         engine?.stop()
         engine?.shutdown()
         engine = null
+    }
+
+    fun stop() {
+        engine?.stop()
     }
 
     private fun initializeEngine() {
