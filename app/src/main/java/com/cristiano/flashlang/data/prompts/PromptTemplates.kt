@@ -183,6 +183,25 @@ TEXTO: {{TEXTO}}""",
             body = """Você é um professor de pronúncia de espanhol (Espanha) para falantes de português do Brasil. Foco: {{FOCO}}; se não informado, cubra: b/v, r e rr, j e g, ll e y, ñ, ditongos e as regras de acentuação (tilde: palavras agudas, graves e esdrújulas). Crie de 20 a 30 cards com palavras-exemplo (type word), ipa em espanhol da Espanha e uma note em português com a regra e o erro típico de brasileiros. Frase curta de exemplo, com tradução. Se não tiver certeza, não inclua a palavra. O campo language deve ser "es".""",
         ),
         PromptTemplate(
+            id = "cloze-text-sentences",
+            title = "Cloze: frases com lacuna",
+            description = "Gere cards com frases contextualizadas e uma lacuna para completar.",
+            category = "Vocabulário",
+            needsLanguage = true,
+            inputs = setOf(
+                PromptInput(
+                    type = PromptInputType.TEXT,
+                    required = true,
+                    label = "Texto para analisar",
+                    hint = "Cole aqui o texto que você leu.",
+                ),
+            ),
+            body = """Você é um professor de {{IDIOMA}} para falantes de português do Brasil, nível B1/B2. Leia o texto e crie de 15 a 25 cards de lacuna (cloze). Para cada card: escolha uma palavra ou expressão útil do texto; escreva uma frase NOVA em {{IDIOMA}} em que o termo apareça em contexto claro e substitua o termo por ___ (três underscores, uma única lacuna) no campo example; em term, escreva exatamente a palavra ou expressão que preenche a lacuna, na mesma forma usada na frase (conjugada ou no plural, se for o caso); em termTranslation, a tradução; em exampleTranslation, a tradução da frase COMPLETA; em note, a forma base quando for diferente do termo e uma dica curta. Use "format": "cloze" em todos os cards. A frase deve dar contexto suficiente para que só uma resposta soe natural. Dê ao baralho um título curto sobre o tema do texto.
+
+TEXTO:
+{{TEXTO}}""",
+        ),
+        PromptTemplate(
             id = "conversation-about-text",
             title = "Conversa sobre o texto",
             description = "Converse sobre um texto e receba correções em português.",

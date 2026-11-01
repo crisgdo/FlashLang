@@ -33,6 +33,18 @@ class DeckExporterTest {
     }
 
     @Test
+    fun exportIncludesFormatOnlyForClozeAndImportPreservesIt() {
+        val json = DeckExporter.toJson(deck, listOf(card.copy(format = "cloze", example = "I need a ___.")))
+        assertTrue(json.contains("\"format\": \"cloze\""))
+        val imported = DeckImporter().parse(json) as DeckImportResult.Success
+        assertEquals("cloze", imported.deck.cards.single().format)
+        assertEquals("I need a ___.", imported.deck.cards.single().example)
+
+        val basicJson = DeckExporter.toJson(deck, listOf(card.copy(format = "basic")))
+        assertFalse(basicJson.contains("\"format\""))
+    }
+
+    @Test
     fun exportThenImportPreservesDeckAndCardContent() {
         val exported = DeckExporter.toJson(deck, listOf(card))
         val imported = DeckImporter().parse(exported)

@@ -57,6 +57,7 @@ class DeckRepository(private val deckDao: DeckDao) {
         exampleTranslation: String,
         ipa: String? = null,
         note: String? = null,
+        format: String = "basic",
     ): Long = deckDao.insertCard(
         Card(
             deckId = deckId,
@@ -67,6 +68,7 @@ class DeckRepository(private val deckDao: DeckDao) {
             exampleTranslation = exampleTranslation,
             ipa = ipa?.trim()?.takeIf(String::isNotEmpty),
             note = note?.trim()?.takeIf(String::isNotEmpty),
+            format = format,
             easeFactor = 2.5,
             intervalDays = 0,
             repetitions = 0,
@@ -83,6 +85,7 @@ class DeckRepository(private val deckDao: DeckDao) {
         exampleTranslation: String,
         ipa: String? = null,
         note: String? = null,
+        format: String = "basic",
     ) {
         val existing = deckDao.getCard(cardId) ?: return
         deckDao.updateCard(
@@ -94,6 +97,7 @@ class DeckRepository(private val deckDao: DeckDao) {
                 exampleTranslation = exampleTranslation,
                 ipa = ipa?.trim()?.takeIf(String::isNotEmpty),
                 note = note?.trim()?.takeIf(String::isNotEmpty),
+                format = format,
             ),
         )
     }

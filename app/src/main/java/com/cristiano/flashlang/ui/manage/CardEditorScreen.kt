@@ -74,6 +74,23 @@ fun CardEditorScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedTextField(state.term, viewModel::updateTerm, modifier = Modifier.fillMaxWidth(), label = { Text("Termo") }, singleLine = true)
+                Text("Formato", style = MaterialTheme.typography.titleSmall)
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = state.format == "basic", onClick = { viewModel.updateFormat("basic") })
+                        Text("Padrão", maxLines = 1, softWrap = false)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = state.format == "cloze", onClick = { viewModel.updateFormat("cloze") })
+                        Text("Lacuna", maxLines = 1, softWrap = false)
+                    }
+                }
+                if (state.format == "cloze") {
+                    Text("Escreva a frase com ___ onde fica a lacuna e, em Termo, a palavra que a preenche", style = MaterialTheme.typography.bodySmall)
+                }
                 Text("Tipo", style = MaterialTheme.typography.titleSmall)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),

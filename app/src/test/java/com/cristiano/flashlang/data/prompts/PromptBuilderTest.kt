@@ -86,4 +86,14 @@ class PromptBuilderTest {
         assertTrue(template.inputs.first { it.type == PromptInputType.LIST }.required)
         assertFalse(template.inputs.first { it.type == PromptInputType.FOCUS }.required)
     }
+
+    @Test
+    fun clozePromptGeneratesDeckFormatAndIncludesClozeInstructions() {
+        val template = PromptTemplates.all.single { it.id == "cloze-text-sentences" }
+        val generated = buildPrompt(template, "en", PromptInputValues(text = "A short story"))
+
+        assertTrue(template.generatesDeck)
+        assertTrue(generated.contains("Use \"format\": \"cloze\" em todos os cards."))
+        assertTrue(generated.endsWith(FORMAT_BLOCK))
+    }
 }

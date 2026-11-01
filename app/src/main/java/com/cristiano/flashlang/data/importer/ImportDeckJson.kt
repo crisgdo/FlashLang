@@ -24,6 +24,7 @@ data class ImportCardJson(
     val ipa: String? = null,
     @JsonNames("rule", "notes")
     val note: String? = null,
+    val format: String? = null,
 ) {
     fun toCard(deckId: Long, createdAt: Long = System.currentTimeMillis()): Card = Card(
         deckId = deckId,
@@ -34,6 +35,7 @@ data class ImportCardJson(
         exampleTranslation = exampleTranslation.trim(),
         ipa = ipa?.trim()?.takeIf(String::isNotEmpty),
         note = note?.trim()?.takeIf(String::isNotEmpty),
+        format = format ?: "basic",
         easeFactor = 2.5,
         intervalDays = 0,
         repetitions = 0,

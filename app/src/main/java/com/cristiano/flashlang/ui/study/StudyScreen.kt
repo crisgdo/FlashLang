@@ -55,6 +55,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -65,6 +71,7 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
+import com.cristiano.flashlang.data.importer.ClozeText
 import com.cristiano.flashlang.data.scheduler.ReviewRating
 import com.cristiano.flashlang.BuildConfig
 import java.util.Locale
@@ -328,7 +335,59 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            if (rotation < 90f) {
+            if (card.format == "cloze") {
+                val fullExample = ClozeText.fillFirstGap(card.example, card.term)
+                if (rotation < 90f) {
+                    Text(
+                        clozeAnnotatedText(
+                            card.example,
+                            "___",
+                            MaterialTheme.colorScheme.primary,
+                            highlightedFontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                        ),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        card.exampleTranslation,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text("Toque para virar", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
+                } else {
+                    Column(
+                        modifier = Modifier.graphicsLayer { rotationY = 180f },
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                clozeAnnotatedText(
+                                    fullExample,
+                                    card.term,
+                                    MaterialTheme.colorScheme.primary,
+                                    startOverride = card.example.indexOf("___").takeIf { it >= 0 },
+                                ),
+                                style = MaterialTheme.typography.headlineSmall,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.weight(1f),
+                            )
+                            IconButton(
+                                onClick = { onSpeak(fullExample) },
+                                modifier = Modifier.semantics { contentDescription = "Ouvir frase completa" },
+                            ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
+                        }
+                        Text(card.termTranslation, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
+                        card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
+                            Text(ipa, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                        }
+                        card.note?.takeIf(String::isNotBlank)?.let { note ->
+                            Text(note, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            } else if (rotation < 90f) {
                 Text(if (card.type == "word") "Palavra" else "Expressão", style = MaterialTheme.typography.labelLarge)
                 IconButton(
                     onClick = { onSpeak(card.term) },
@@ -369,6 +428,25 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                 }
             }
         }
+    }
+}
+
+private fun clozeAnnotatedText(
+    text: String,
+    highlighted: String,
+    color: androidx.compose.ui.graphics.Color,
+    startOverride: Int? = null,
+    highlightedFontSize: TextUnit = TextUnit.Unspecified,
+): AnnotatedString {
+    val start = startOverride ?: text.indexOf(highlighted, ignoreCase = true)
+    if (start < 0) return AnnotatedString(text)
+    val end = start + highlighted.length
+    return buildAnnotatedString {
+        append(text.substring(0, start))
+        withStyle(SpanStyle(color = color, fontWeight = FontWeight.Bold, fontSize = highlightedFontSize)) {
+            append(text.substring(start, end))
+        }
+        append(text.substring(end))
     }
 }
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cristiano.flashlang.data.repository.DeckRepository
+import com.cristiano.flashlang.data.importer.ClozeText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,7 @@ import kotlinx.coroutines.launch
 data class CardEditorState(
     val term: String = "",
     val type: String = "word",
+    val format: String = "basic",
     val termTranslation: String = "",
     val example: String = "",
     val exampleTranslation: String = "",
@@ -41,6 +43,7 @@ class CardEditorViewModel(
                 else _state.value = CardEditorState(
                     term = card.term,
                     type = card.type,
+                    format = card.format,
                     termTranslation = card.termTranslation,
                     example = card.example,
                     exampleTranslation = card.exampleTranslation,
@@ -53,6 +56,7 @@ class CardEditorViewModel(
 
     fun updateTerm(value: String) = _state.update { it.copy(term = value, errorMessage = null) }
     fun updateType(value: String) { if (value in setOf("word", "expression")) _state.update { it.copy(type = value) } }
+    fun updateFormat(value: String) { if (value in setOf("basic", "cloze")) _state.update { it.copy(format = value, errorMessage = null) } }
     fun updateTermTranslation(value: String) = _state.update { it.copy(termTranslation = value, errorMessage = null) }
     fun updateExample(value: String) = _state.update { it.copy(example = value, errorMessage = null) }
     fun updateExampleTranslation(value: String) = _state.update { it.copy(exampleTranslation = value, errorMessage = null) }
@@ -66,6 +70,15 @@ class CardEditorViewModel(
             _state.update { it.copy(errorMessage = "Preencha todos os campos antes de salvar.") }
             return
         }
+        val normalizedExample = if (current.format == "cloze") {
+            ClozeText.normalize(current.example, current.term)
+        } else {
+            current.example.trim()
+        }
+        if (normalizedExample == null) {
+            _state.update { it.copy(errorMessage = "No formato Lacuna, a frase precisa conter uma lacuna válida ou o termo do card.") }
+            return
+        }
         _state.update { it.copy(isSaving = true, errorMessage = null) }
         viewModelScope.launch {
             try {
@@ -76,10 +89,11 @@ class CardEditorViewModel(
                         current.term.trim(),
                         current.type,
                         current.termTranslation.trim(),
-                        current.example.trim(),
+                        normalizedExample,
                         current.exampleTranslation.trim(),
                         current.ipa.trim().takeIf(String::isNotEmpty),
                         current.note.trim().takeIf(String::isNotEmpty),
+                        current.format,
                     )
                 } else {
                     repository.updateCardContent(
@@ -87,10 +101,11 @@ class CardEditorViewModel(
                         current.term.trim(),
                         current.type,
                         current.termTranslation.trim(),
-                        current.example.trim(),
+                        normalizedExample,
                         current.exampleTranslation.trim(),
                         current.ipa.trim().takeIf(String::isNotEmpty),
                         current.note.trim().takeIf(String::isNotEmpty),
+                        current.format,
                     )
                 }
                 _state.update { it.copy(isSaving = false, saved = true) }

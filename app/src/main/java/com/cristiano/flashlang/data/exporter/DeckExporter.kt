@@ -23,6 +23,7 @@ data class ExportCardJson(
     val exampleTranslation: String,
     val ipa: String? = null,
     val note: String? = null,
+    val format: String? = null,
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -45,6 +46,7 @@ object DeckExporter {
                     exampleTranslation = card.exampleTranslation,
                     ipa = card.ipa,
                     note = card.note,
+                    format = card.format.takeIf { it == "cloze" },
                 )
             },
         ),

@@ -8,10 +8,11 @@ sem comentários e sem vírgula depois do último item, neste formato:
 {"deckName": "...", "language": "en ou es", "cards": [{"term": "...",
 "type": "word ou expression", "termTranslation": "...", "example":
 "...", "exampleTranslation": "...", "ipa": "... (opcional)",
-"note": "... (opcional)"}]}.
+"note": "... (opcional)", "format": "basic ou cloze (opcional)"}]}.
 Regras: traduções em português do Brasil; language "en" para
 inglês e "es" para espanhol; ipa entre barras, em inglês americano
-(en) ou espanhol da Espanha (es); note curta e em português."""
+(en) ou espanhol da Espanha (es); note curta e em português; use
+cloze apenas se o prompt pedir lacunas."""
 
 fun canGeneratePrompt(template: PromptTemplate, values: PromptInputValues): Boolean =
     template.inputs.filter { it.required }.all { input ->

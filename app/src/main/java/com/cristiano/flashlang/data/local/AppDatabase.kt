@@ -8,7 +8,7 @@ import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.UserPrompt
 
-@Database(entities = [Deck::class, Card::class, UserPrompt::class], version = 4, exportSchema = false)
+@Database(entities = [Deck::class, Card::class, UserPrompt::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
     abstract fun userPromptDao(): UserPromptDao
@@ -44,6 +44,12 @@ abstract class AppDatabase : RoomDatabase() {
                         updatedAt INTEGER NOT NULL
                     )""".trimIndent(),
                 )
+            }
+        }
+
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN format TEXT NOT NULL DEFAULT 'basic'")
             }
         }
     }

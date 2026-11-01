@@ -156,6 +156,54 @@ class DeckImporterTest {
         assertTrue(error.message.contains("card 1"))
     }
 
+    @Test
+    fun importsClozeWithExistingGapAndNormalizesAllGapVariantsToOne() {
+        val input = validJson
+            .replace("\"example\": \"I need a ticket.\"", "\"example\": \"I need [___] and ____ today.\"")
+            .replace("\"exampleTranslation\":", "\"format\": \"cloze\", \"exampleTranslation\":")
+        val result = importer.parse(input) as DeckImportResult.Success
+        val card = result.deck.cards.single()
+
+        assertEquals("cloze", card.format)
+        assertEquals("I need ___ and ticket today.", card.example)
+    }
+
+    @Test
+    fun createsClozeGapFromTermWhenMissing() {
+        val input = validJson.replace("\"example\": \"I need a ticket.\"", "\"example\": \"I need a ticket today.\"")
+            .replace("\"exampleTranslation\":", "\"format\": \"lacuna\", \"exampleTranslation\":")
+        val result = importer.parse(input) as DeckImportResult.Success
+
+        assertEquals("I need a ___ today.", result.deck.cards.single().example)
+        assertEquals("cloze", result.deck.cards.single().format)
+    }
+
+    @Test
+    fun normalizesClozeEllipsisAndUnicodeEllipsisGaps() {
+        val jsonWithGaps = validJson
+            .replace("\"example\": \"I need a ticket.\"", "\"example\": \"I need [...] and … today.\"")
+            .replace("\"exampleTranslation\":", "\"format\": \"cloze\", \"exampleTranslation\":")
+        val result = importer.parse(jsonWithGaps) as DeckImportResult.Success
+
+        assertEquals("I need ___ and ticket today.", result.deck.cards.single().example)
+    }
+
+    @Test
+    fun rejectsClozeWithoutGapOrTermAndDefaultsInvalidFormatToBasic() {
+        val invalidCloze = validJson.replace("I need a ticket.", "The train leaves now.")
+            .replace("\"exampleTranslation\":", "\"format\": \"cloze\", \"exampleTranslation\":")
+        val error = importer.parse(invalidCloze) as DeckImportResult.Error
+        assertTrue(error.message.contains("card 1"))
+        assertTrue(error.message.contains("lacuna"))
+
+        val invalidFormat = validJson.replace("\"exampleTranslation\":", "\"format\": \"unknown\", \"exampleTranslation\":")
+        val success = importer.parse(invalidFormat) as DeckImportResult.Success
+        assertEquals("basic", success.deck.cards.single().format)
+
+        val omittedFormat = importer.parse(validJson) as DeckImportResult.Success
+        assertEquals("basic", omittedFormat.deck.cards.single().format)
+    }
+
     private companion object {
         const val validJson = """{
           "deckName": "Travel",

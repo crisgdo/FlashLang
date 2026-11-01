@@ -102,6 +102,9 @@ fun ManageCardsScreen(
                                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(card.term, style = MaterialTheme.typography.titleMedium)
                                     Text(card.termTranslation, style = MaterialTheme.typography.bodyMedium)
+                                    if (card.format == "cloze") {
+                                        Text("Lacuna", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                                    }
                                 }
                                     IconButton(onClick = { onEditCard(card.id) }) {
                                         Icon(Icons.Outlined.Edit, contentDescription = "Editar card")

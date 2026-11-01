@@ -33,6 +33,12 @@ class DeckImporter(
             cards = parsed.cards.map { card ->
                 card.copy(
                     type = normalizeType(card.type),
+                    format = normalizeFormat(card.format),
+                    example = if (normalizeFormat(card.format) == "cloze") {
+                        ClozeText.normalize(card.example, card.term) ?: card.example.trim()
+                    } else {
+                        card.example.trim()
+                    },
                     ipa = card.ipa?.trim()?.takeIf(String::isNotEmpty),
                     note = card.note?.trim()?.takeIf(String::isNotEmpty),
                 )
@@ -56,6 +62,11 @@ class DeckImporter(
             }
             if (card.type !in setOf("word", "expression")) {
                 return DeckImportResult.Error("O campo type do card ${index + 1} deve ser \"word\" ou \"expression\".")
+            }
+            if (card.format == "cloze" && !card.example.contains("___")) {
+                return DeckImportResult.Error(
+                    "O card ${index + 1} está no formato lacuna, mas a frase não contém o termo \"${card.term}\" nem uma lacuna válida.",
+                )
             }
         }
 
@@ -110,6 +121,11 @@ class DeckImporter(
         "word", "palavra" -> "word"
         "expression", "phrase", "expressão", "idiom" -> "expression"
         else -> value.trim()
+    }
+
+    private fun normalizeFormat(value: String?): String = when (value?.trim()?.lowercase(Locale.ROOT)) {
+        "cloze", "lacuna" -> "cloze"
+        else -> "basic"
     }
 
     private fun invalidJsonMessage(source: String, exception: Exception): String {
