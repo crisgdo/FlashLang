@@ -63,6 +63,8 @@ class UserPromptRepositoryTest {
 
         override fun observeAll(): Flow<List<UserPrompt>> = prompts
 
+        override suspend fun getAll(): List<UserPrompt> = prompts.value
+
         override suspend fun getById(id: Long): UserPrompt? = prompts.value.firstOrNull { it.id == id }
 
         override suspend fun deleteById(id: Long) {

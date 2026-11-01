@@ -22,6 +22,9 @@ interface UserPromptDao {
     @Query("SELECT * FROM user_prompts ORDER BY updatedAt DESC, id DESC")
     fun observeAll(): Flow<List<UserPrompt>>
 
+    @Query("SELECT * FROM user_prompts ORDER BY updatedAt DESC, id DESC")
+    suspend fun getAll(): List<UserPrompt>
+
     @Query("SELECT * FROM user_prompts WHERE id = :id LIMIT 1")
     suspend fun getById(id: Long): UserPrompt?
 

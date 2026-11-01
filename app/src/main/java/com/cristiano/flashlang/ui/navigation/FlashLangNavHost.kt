@@ -1,8 +1,6 @@
 package com.cristiano.flashlang.ui.navigation
 
-import android.content.Intent
 import android.widget.Toast
-import androidx.core.content.FileProvider
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
@@ -21,10 +19,17 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.cristiano.flashlang.data.repository.DeckRepository
 import com.cristiano.flashlang.data.repository.UserPromptRepository
+import com.cristiano.flashlang.data.local.AppDatabase
+import com.cristiano.flashlang.data.backup.BackupService
+import com.cristiano.flashlang.data.backup.RoomBackupDataStore
 import com.cristiano.flashlang.data.model.UserPrompt
 import com.cristiano.flashlang.data.exporter.DeckExporter
+import com.cristiano.flashlang.data.exporter.writeShareableExport
+import com.cristiano.flashlang.data.exporter.createJsonShareChooser
 import com.cristiano.flashlang.ui.home.HomeScreen
 import com.cristiano.flashlang.ui.home.HomeViewModel
+import com.cristiano.flashlang.ui.backup.BackupScreen
+import com.cristiano.flashlang.ui.backup.BackupViewModel
 import com.cristiano.flashlang.ui.importdeck.ImportScreen
 import com.cristiano.flashlang.ui.importdeck.ImportViewModel
 import com.cristiano.flashlang.ui.study.StudyScreen
@@ -39,13 +44,13 @@ import com.cristiano.flashlang.ui.prompts.PromptsScreen
 import com.cristiano.flashlang.ui.prompts.PromptDetailScreen
 import com.cristiano.flashlang.ui.prompts.UserPromptEditorScreen
 import com.cristiano.flashlang.ui.prompts.UserPromptsViewModel
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private object Routes {
     const val HOME = "home"
+    const val BACKUP = "backup"
     const val IMPORT = "import"
     const val PROMPTS = "prompts"
     const val PROMPT_DETAIL = "prompt/{promptId}"
@@ -61,6 +66,7 @@ private object Routes {
 fun FlashLangNavHost(
     repository: DeckRepository,
     userPromptRepository: UserPromptRepository,
+    database: AppDatabase,
     navController: NavHostController = rememberNavController(),
 ) {
     NavHost(navController = navController, startDestination = Routes.HOME) {
@@ -72,6 +78,7 @@ fun FlashLangNavHost(
                 homeViewModel,
                 onImportClick = { navController.navigate(Routes.IMPORT) },
                 onPromptsClick = { navController.navigate(Routes.PROMPTS) },
+                onBackupClick = { navController.navigate(Routes.BACKUP) },
                 onDeckClick = { deckId -> navController.navigate("study/$deckId") },
                 onManageClick = { deckId -> navController.navigate("manage/$deckId") },
                 onExportClick = { deckId ->
@@ -79,24 +86,23 @@ fun FlashLangNavHost(
                         try {
                             val deck = repository.getDecks().first { it.id == deckId }
                             val json = DeckExporter.toJson(deck, repository.getCards(deckId))
-                            val file = withContext(Dispatchers.IO) {
-                                val directory = File(context.cacheDir, "exports").apply { mkdirs() }
-                                val safeName = deck.name.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "baralho" }
-                                File(directory, "$safeName-${deck.id}.json").apply { writeText(json) }
+                            val safeName = deck.name.replace(Regex("[^A-Za-z0-9._-]"), "_").ifBlank { "baralho" }
+                            val fileName = "$safeName-${deck.id}.json"
+                            val uri = withContext(Dispatchers.IO) {
+                                writeShareableExport(context, fileName, json)
                             }
-                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/json"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "Compartilhar baralho"))
+                            context.startActivity(createJsonShareChooser(uri, fileName, "Compartilhar baralho"))
                         } catch (_: Exception) {
                             Toast.makeText(context, "Não foi possível exportar o baralho.", Toast.LENGTH_LONG).show()
                         }
                     }
                 },
             )
+        }
+        composable(Routes.BACKUP) {
+            val backupService = remember(database) { BackupService(RoomBackupDataStore(database)) }
+            val backupViewModel: BackupViewModel = viewModel(factory = BackupViewModel.Factory(backupService))
+            BackupScreen(backupViewModel, onBack = { navController.popBackStack() })
         }
         composable(Routes.IMPORT) {
             val importViewModel: ImportViewModel = viewModel(factory = ImportViewModel.Factory(repository))

@@ -17,6 +17,7 @@ class MainActivity : ComponentActivity() {
                 FlashLangNavHost(
                     repository = flashLangApplication.deckRepository,
                     userPromptRepository = flashLangApplication.userPromptRepository,
+                    database = flashLangApplication.database,
                 )
             }
         }

@@ -56,6 +56,7 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Backup
 import com.cristiano.flashlang.data.model.DeckListItem
 import java.util.Locale
 
@@ -64,6 +65,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onImportClick: () -> Unit,
     onPromptsClick: () -> Unit,
+    onBackupClick: () -> Unit,
     onDeckClick: (Long) -> Unit,
     onManageClick: (Long) -> Unit,
     onExportClick: (Long) -> Unit,
@@ -128,6 +130,11 @@ fun HomeScreen(
                         Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
                     }
                     DropdownMenu(expanded = topMenuExpanded, onDismissRequest = { topMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Backup") },
+                            leadingIcon = { Icon(Icons.Outlined.Backup, contentDescription = null) },
+                            onClick = { topMenuExpanded = false; onBackupClick() },
+                        )
                         DropdownMenuItem(
                             text = { Text("Gerenciar categorias") },
                             leadingIcon = { Icon(Icons.Outlined.Category, contentDescription = null) },
