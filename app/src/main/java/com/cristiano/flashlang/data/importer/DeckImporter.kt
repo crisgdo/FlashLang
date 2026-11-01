@@ -30,7 +30,13 @@ class DeckImporter(
         val deck = parsed.copy(
             deckName = parsed.deckName.trim(),
             language = normalizeLanguage(parsed.language),
-            cards = parsed.cards.map { card -> card.copy(type = normalizeType(card.type)) },
+            cards = parsed.cards.map { card ->
+                card.copy(
+                    type = normalizeType(card.type),
+                    ipa = card.ipa?.trim()?.takeIf(String::isNotEmpty),
+                    note = card.note?.trim()?.takeIf(String::isNotEmpty),
+                )
+            },
         )
 
         if (deck.deckName.isBlank()) return DeckImportResult.Error("O campo deckName não pode ficar vazio.")

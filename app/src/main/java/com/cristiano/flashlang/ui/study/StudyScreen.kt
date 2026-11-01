@@ -332,6 +332,21 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     Text(card.termTranslation, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                    card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
+                        Text(
+                            ipa,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    card.note?.takeIf(String::isNotBlank)?.let { note ->
+                        Text(
+                            note,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(card.example, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
                         IconButton(

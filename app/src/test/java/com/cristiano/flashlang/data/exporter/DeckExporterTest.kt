@@ -20,6 +20,16 @@ class DeckExporterTest {
         assertFalse(json.contains("intervalDays"))
         assertFalse(json.contains("repetitions"))
         assertFalse(json.contains("dueAt"))
+        assertTrue(json.contains("\"ipa\": \"/ˈtɪkɪt/\""))
+        assertTrue(json.contains("\"note\": \"A travel document.\""))
+    }
+
+    @Test
+    fun exportOmitsOptionalFieldsWhenAbsent() {
+        val json = DeckExporter.toJson(deck, listOf(card.copy(ipa = null, note = null)))
+
+        assertFalse(json.contains("\"ipa\""))
+        assertFalse(json.contains("\"note\""))
     }
 
     @Test
@@ -38,6 +48,8 @@ class DeckExporterTest {
         assertEquals(card.termTranslation, importedCard.termTranslation)
         assertEquals(card.example, importedCard.example)
         assertEquals(card.exampleTranslation, importedCard.exampleTranslation)
+        assertEquals(card.ipa, importedCard.ipa)
+        assertEquals(card.note, importedCard.note)
     }
 
     private companion object {
@@ -50,6 +62,8 @@ class DeckExporterTest {
             termTranslation = "bilhete",
             example = "I need a ticket.",
             exampleTranslation = "Eu preciso de um bilhete.",
+            ipa = "/ˈtɪkɪt/",
+            note = "A travel document.",
             easeFactor = 1.7,
             intervalDays = 8,
             repetitions = 3,

@@ -16,6 +16,8 @@ data class CardEditorState(
     val termTranslation: String = "",
     val example: String = "",
     val exampleTranslation: String = "",
+    val ipa: String = "",
+    val note: String = "",
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
@@ -42,6 +44,8 @@ class CardEditorViewModel(
                     termTranslation = card.termTranslation,
                     example = card.example,
                     exampleTranslation = card.exampleTranslation,
+                    ipa = card.ipa.orEmpty(),
+                    note = card.note.orEmpty(),
                 )
             }
         }
@@ -52,6 +56,8 @@ class CardEditorViewModel(
     fun updateTermTranslation(value: String) = _state.update { it.copy(termTranslation = value, errorMessage = null) }
     fun updateExample(value: String) = _state.update { it.copy(example = value, errorMessage = null) }
     fun updateExampleTranslation(value: String) = _state.update { it.copy(exampleTranslation = value, errorMessage = null) }
+    fun updateIpa(value: String) = _state.update { it.copy(ipa = value, errorMessage = null) }
+    fun updateNote(value: String) = _state.update { it.copy(note = value, errorMessage = null) }
 
     fun save() {
         val current = _state.value
@@ -65,9 +71,27 @@ class CardEditorViewModel(
             try {
                 val existingId = cardId
                 if (existingId == null) {
-                    repository.addCard(deckId, current.term.trim(), current.type, current.termTranslation.trim(), current.example.trim(), current.exampleTranslation.trim())
+                    repository.addCard(
+                        deckId,
+                        current.term.trim(),
+                        current.type,
+                        current.termTranslation.trim(),
+                        current.example.trim(),
+                        current.exampleTranslation.trim(),
+                        current.ipa.trim().takeIf(String::isNotEmpty),
+                        current.note.trim().takeIf(String::isNotEmpty),
+                    )
                 } else {
-                    repository.updateCardContent(existingId, current.term.trim(), current.type, current.termTranslation.trim(), current.example.trim(), current.exampleTranslation.trim())
+                    repository.updateCardContent(
+                        existingId,
+                        current.term.trim(),
+                        current.type,
+                        current.termTranslation.trim(),
+                        current.example.trim(),
+                        current.exampleTranslation.trim(),
+                        current.ipa.trim().takeIf(String::isNotEmpty),
+                        current.note.trim().takeIf(String::isNotEmpty),
+                    )
                 }
                 _state.update { it.copy(isSaving = false, saved = true) }
             } catch (_: Exception) {

@@ -26,6 +26,8 @@ data class Card(
     val termTranslation: String,
     val example: String,
     val exampleTranslation: String,
+    val ipa: String? = null,
+    val note: String? = null,
     @ColumnInfo(defaultValue = "2.5") val easeFactor: Double = 2.5,
     @ColumnInfo(defaultValue = "0") val intervalDays: Int = 0,
     @ColumnInfo(defaultValue = "0") val repetitions: Int = 0,

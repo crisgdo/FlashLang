@@ -51,7 +51,12 @@ import kotlinx.coroutines.withContext
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack: () -> Unit) {
+fun ImportScreen(
+    viewModel: ImportViewModel,
+    onImportSuccess: () -> Unit,
+    onBack: () -> Unit,
+    onMorePrompts: () -> Unit,
+) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var selectedLanguage by remember { mutableStateOf("inglês") }
@@ -108,6 +113,9 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
                 Icon(Icons.Outlined.ContentCopy, contentDescription = null)
                 androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
                 Text("Copiar prompt")
+            }
+            TextButton(onClick = onMorePrompts, modifier = Modifier.fillMaxWidth()) {
+                Text("Mais prompts")
             }
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
             Button(

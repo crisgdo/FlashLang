@@ -3,6 +3,7 @@ package com.cristiano.flashlang.data.exporter
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -20,10 +21,16 @@ data class ExportCardJson(
     val termTranslation: String,
     val example: String,
     val exampleTranslation: String,
+    val ipa: String? = null,
+    val note: String? = null,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 object DeckExporter {
-    private val json = Json { prettyPrint = true }
+    private val json = Json {
+        prettyPrint = true
+        explicitNulls = false
+    }
 
     fun toJson(deck: Deck, cards: List<Card>): String = json.encodeToString(
         ExportDeckJson(
@@ -36,6 +43,8 @@ object DeckExporter {
                     termTranslation = card.termTranslation,
                     example = card.example,
                     exampleTranslation = card.exampleTranslation,
+                    ipa = card.ipa,
+                    note = card.note,
                 )
             },
         ),

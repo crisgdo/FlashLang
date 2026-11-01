@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,6 +17,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
@@ -49,6 +52,7 @@ import com.cristiano.flashlang.data.model.DeckListItem
 fun HomeScreen(
     viewModel: HomeViewModel,
     onImportClick: () -> Unit,
+    onPromptsClick: () -> Unit,
     onDeckClick: (Long) -> Unit,
     onManageClick: (Long) -> Unit,
     onExportClick: (Long) -> Unit,
@@ -58,11 +62,19 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            Text(
-                "Meus baralhos",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 16.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Meus baralhos",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onPromptsClick) {
+                    Icon(Icons.Outlined.AutoAwesome, contentDescription = "Prompts")
+                }
+            }
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onImportClick) {

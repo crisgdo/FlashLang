@@ -1,0 +1,64 @@
+package com.cristiano.flashlang.data.prompts
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class PromptBuilderTest {
+    private val vocabularyPrompt = PromptTemplates.all.first { it.id == "vocabulary-texts" }
+
+    @Test
+    fun replacesLanguageAndInputMarkers() {
+        val prompt = buildPrompt(
+            vocabularyPrompt,
+            language = "es",
+            values = PromptInputValues(text = "A short story"),
+        )
+
+        assertTrue(prompt.contains("professor de espanhol"))
+        assertTrue(prompt.endsWith("TEXTO:\nA short story\n\n$FORMAT_BLOCK"))
+    }
+
+    @Test
+    fun replacesListAndFocusMarkers() {
+        val vowelPrompt = PromptTemplates.all.first { it.id == "vowel-sounds" }
+        val prompt = buildPrompt(
+            vowelPrompt,
+            language = "en",
+            values = PromptInputValues(list = "hat, hate", focus = "vogal a"),
+        )
+
+        assertTrue(prompt.contains("Foco: vogal a;"))
+        assertTrue(prompt.contains("classifique cada uma: hat, hate."))
+    }
+
+    @Test
+    fun replacesEmptyMarkersWithNotProvidedText() {
+        val vowelPrompt = PromptTemplates.all.first { it.id == "vowel-sounds" }
+        val prompt = buildPrompt(vowelPrompt, language = "en", values = PromptInputValues())
+
+        assertTrue(prompt.contains("Foco: (não informado)"))
+        assertTrue(prompt.contains("classifique cada uma: (não informado)"))
+    }
+
+    @Test
+    fun alwaysAppendsTheSingleFormatBlockAtTheEnd() {
+        PromptTemplates.all.forEach { template ->
+            val prompt = buildPrompt(template, language = "en", values = PromptInputValues(text = "some text", list = "walk"))
+
+            assertTrue(prompt.endsWith(FORMAT_BLOCK))
+            assertEquals(1, prompt.windowed(FORMAT_BLOCK.length).count { it == FORMAT_BLOCK })
+        }
+    }
+
+    @Test
+    fun requiredInputsControlWhetherPromptCanBeCopied() {
+        val verbPrompt = PromptTemplates.all.first { it.id == "ed-pronunciation" }
+        assertFalse(canGeneratePrompt(verbPrompt, PromptInputValues()))
+        assertTrue(canGeneratePrompt(verbPrompt, PromptInputValues(list = "walk, play")))
+
+        val vowelPrompt = PromptTemplates.all.first { it.id == "vowel-sounds" }
+        assertTrue(canGeneratePrompt(vowelPrompt, PromptInputValues()))
+    }
+}

@@ -28,6 +28,9 @@ import com.cristiano.flashlang.ui.manage.ManageCardsScreen
 import com.cristiano.flashlang.ui.manage.ManageCardsViewModel
 import com.cristiano.flashlang.ui.manage.CardEditorScreen
 import com.cristiano.flashlang.ui.manage.CardEditorViewModel
+import com.cristiano.flashlang.data.prompts.PromptTemplates
+import com.cristiano.flashlang.ui.prompts.PromptsScreen
+import com.cristiano.flashlang.ui.prompts.PromptDetailScreen
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -36,6 +39,8 @@ import kotlinx.coroutines.withContext
 private object Routes {
     const val HOME = "home"
     const val IMPORT = "import"
+    const val PROMPTS = "prompts"
+    const val PROMPT_DETAIL = "prompt/{promptId}"
     const val STUDY = "study/{deckId}"
     const val MANAGE = "manage/{deckId}"
     const val EDIT_CARD = "editCard/{deckId}/{cardId}"
@@ -51,6 +56,7 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
             HomeScreen(
                 homeViewModel,
                 onImportClick = { navController.navigate(Routes.IMPORT) },
+                onPromptsClick = { navController.navigate(Routes.PROMPTS) },
                 onDeckClick = { deckId -> navController.navigate("study/$deckId") },
                 onManageClick = { deckId -> navController.navigate("manage/$deckId") },
                 onExportClick = { deckId ->
@@ -83,7 +89,28 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
                 viewModel = importViewModel,
                 onImportSuccess = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
+                onMorePrompts = { navController.navigate(Routes.PROMPTS) },
             )
+        }
+        composable(Routes.PROMPTS) {
+            PromptsScreen(
+                onBack = { navController.popBackStack() },
+                onSelectPrompt = { promptId -> navController.navigate("prompt/$promptId") },
+            )
+        }
+        composable(
+            route = Routes.PROMPT_DETAIL,
+            arguments = listOf(navArgument("promptId") { type = NavType.StringType }),
+        ) { entry ->
+            val promptId = requireNotNull(entry.arguments).getString("promptId")
+            val template = PromptTemplates.all.firstOrNull { it.id == promptId }
+            if (template != null) {
+                PromptDetailScreen(
+                    template = template,
+                    onBack = { navController.popBackStack() },
+                    onImport = { navController.navigate(Routes.IMPORT) },
+                )
+            }
         }
         composable(
             route = Routes.STUDY,

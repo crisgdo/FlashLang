@@ -7,7 +7,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 
-@Database(entities = [Deck::class, Card::class], version = 2, exportSchema = false)
+@Database(entities = [Deck::class, Card::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
 
@@ -19,6 +19,13 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE cards ADD COLUMN repetitions INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("ALTER TABLE cards ADD COLUMN dueAt INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("UPDATE cards SET dueAt = ${System.currentTimeMillis()}")
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE cards ADD COLUMN ipa TEXT")
+                db.execSQL("ALTER TABLE cards ADD COLUMN note TEXT")
             }
         }
     }

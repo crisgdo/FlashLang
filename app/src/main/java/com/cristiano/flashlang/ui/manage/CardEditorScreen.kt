@@ -82,6 +82,20 @@ fun CardEditorScreen(
                 OutlinedTextField(state.termTranslation, viewModel::updateTermTranslation, modifier = Modifier.fillMaxWidth(), label = { Text("Tradução do termo") })
                 OutlinedTextField(state.example, viewModel::updateExample, modifier = Modifier.fillMaxWidth(), label = { Text("Frase de exemplo") })
                 OutlinedTextField(state.exampleTranslation, viewModel::updateExampleTranslation, modifier = Modifier.fillMaxWidth(), label = { Text("Tradução da frase") })
+                OutlinedTextField(
+                    state.ipa,
+                    viewModel::updateIpa,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Pronúncia (IPA)") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    state.note,
+                    viewModel::updateNote,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Regra ou nota") },
+                    minLines = 3,
+                )
                 state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 Button(onClick = viewModel::save, enabled = !state.isSaving, modifier = Modifier.fillMaxWidth()) {
                     if (state.isSaving) CircularProgressIndicator() else {

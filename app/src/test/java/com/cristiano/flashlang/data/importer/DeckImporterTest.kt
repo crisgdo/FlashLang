@@ -22,6 +22,47 @@ class DeckImporterTest {
     }
 
     @Test
+    fun optionalIpaAndNoteCanBeMissingOrProvided() {
+        val withoutFields = importer.parse(validJson) as DeckImportResult.Success
+        assertEquals(null, withoutFields.deck.cards.single().ipa)
+        assertEquals(null, withoutFields.deck.cards.single().note)
+
+        val withFields = importer.parse(
+            validJson.replace(
+                "\"type\": \"word\",",
+                "\"type\": \"word\", \"ipa\": \"[tɪkɪt]\", \"note\": \"Use this in travel contexts.\",",
+            ),
+        ) as DeckImportResult.Success
+        assertEquals("[tɪkɪt]", withFields.deck.cards.single().ipa)
+        assertEquals("Use this in travel contexts.", withFields.deck.cards.single().note)
+    }
+
+    @Test
+    fun acceptsAlternativeIpaAndNoteKeys() {
+        val pronunciation = importer.parse(
+            validJson.replace("\"type\": \"word\",", "\"type\": \"word\", \"pronunciation\": \"/tɪkɪt/\", \"rule\": \"Rule one\",")
+        ) as DeckImportResult.Success
+        assertEquals("/tɪkɪt/", pronunciation.deck.cards.single().ipa)
+        assertEquals("Rule one", pronunciation.deck.cards.single().note)
+
+        val phonetic = importer.parse(
+            validJson.replace("\"type\": \"word\",", "\"type\": \"word\", \"phonetic\": \"ticket-ipa\", \"notes\": \"Plural: tickets\",")
+        ) as DeckImportResult.Success
+        assertEquals("ticket-ipa", phonetic.deck.cards.single().ipa)
+        assertEquals("Plural: tickets", phonetic.deck.cards.single().note)
+    }
+
+    @Test
+    fun blankOptionalFieldsBecomeNull() {
+        val result = importer.parse(
+            validJson.replace("\"type\": \"word\",", "\"type\": \"word\", \"ipa\": \"  \", \"note\": \"\\n  \",")
+        ) as DeckImportResult.Success
+
+        assertEquals(null, result.deck.cards.single().ipa)
+        assertEquals(null, result.deck.cards.single().note)
+    }
+
+    @Test
     fun removesLineContinuationSlashesAndDecodesLeadingHtmlSpaces() {
         val copiedJson = """{\
 &#x20;"deckName": "Travel",\
