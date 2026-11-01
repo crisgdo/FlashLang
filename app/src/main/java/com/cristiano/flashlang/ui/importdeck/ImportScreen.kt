@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -50,7 +52,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 fun ImportScreen(
     viewModel: ImportViewModel,
     onImportSuccess: () -> Unit,
@@ -96,12 +98,18 @@ fun ImportScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Idioma de estudo", style = MaterialTheme.typography.titleMedium)
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                RadioButton(selected = selectedLanguage == "inglês", onClick = { selectedLanguage = "inglês" })
-                Text("Inglês")
-                androidx.compose.foundation.layout.Spacer(Modifier.width(16.dp))
-                RadioButton(selected = selectedLanguage == "espanhol", onClick = { selectedLanguage = "espanhol" })
-                Text("Espanhol")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(selected = selectedLanguage == "inglês", onClick = { selectedLanguage = "inglês" })
+                    Text("Inglês", maxLines = 1, softWrap = false)
+                }
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    RadioButton(selected = selectedLanguage == "espanhol", onClick = { selectedLanguage = "espanhol" })
+                    Text("Espanhol", maxLines = 1, softWrap = false)
+                }
             }
             TextButton(
                 onClick = {
@@ -161,9 +169,16 @@ fun ImportScreen(
                 TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.REPLACE) }) { Text("Substituir") }
             },
             dismissButton = {
-                Row {
-                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.KEEP_BOTH) }) { Text("Manter os dois") }
-                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.CANCEL) }) { Text("Cancelar") }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.KEEP_BOTH) }) {
+                        Text("Manter os dois", maxLines = 1, softWrap = false)
+                    }
+                    TextButton(onClick = { viewModel.resolveDuplicate(DuplicateAction.CANCEL) }) {
+                        Text("Cancelar", maxLines = 1, softWrap = false)
+                    }
                 }
             },
         )

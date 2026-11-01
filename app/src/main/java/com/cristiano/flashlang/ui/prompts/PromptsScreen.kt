@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -227,7 +229,7 @@ private fun ReadyPromptCard(template: PromptTemplate, onOpen: () -> Unit, onDupl
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PromptDetailScreen(
     template: PromptTemplate,
@@ -265,12 +267,18 @@ fun PromptDetailScreen(
             Text(template.description, style = MaterialTheme.typography.bodyLarge)
             if (template.needsLanguage) {
                 Text("Idioma de estudo", style = MaterialTheme.typography.titleSmall)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = language == "en", onClick = { language = "en" })
-                    Text("Inglês")
-                    Spacer(Modifier.width(16.dp))
-                    RadioButton(selected = language == "es", onClick = { language = "es" })
-                    Text("Espanhol")
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = language == "en", onClick = { language = "en" })
+                        Text("Inglês", maxLines = 1, softWrap = false)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = language == "es", onClick = { language = "es" })
+                        Text("Espanhol", maxLines = 1, softWrap = false)
+                    }
                 }
             }
             template.inputs.forEach { input ->
@@ -332,7 +340,7 @@ fun PromptDetailScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun UserPromptEditorScreen(
     prompt: UserPrompt?,
@@ -394,9 +402,15 @@ fun UserPromptEditorScreen(
                 minLines = 10,
             )
             Text("Inserir marcador no cursor", style = MaterialTheme.typography.titleSmall)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 listOf("{{IDIOMA}}", "{{TEXTO}}", "{{LISTA}}", "{{FOCO}}").forEach { marker ->
-                    AssistChip(onClick = { insertMarker(marker) }, label = { Text(marker) })
+                    AssistChip(
+                        onClick = { insertMarker(marker) },
+                        label = { Text(marker, maxLines = 1, softWrap = false) },
+                    )
                 }
             }
             Row(

@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,7 +70,7 @@ import com.cristiano.flashlang.BuildConfig
 import java.util.Locale
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StudyScreen(
     viewModel: StudyViewModel,
@@ -200,28 +202,34 @@ fun StudyScreen(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                 )
                 if (state.isAllCardsMode) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Button(onClick = viewModel::showPrevious, enabled = state.currentIndex > 0, modifier = Modifier.weight(1f)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        maxItemsInEachRow = 2,
+                    ) {
+                        Button(onClick = viewModel::showPrevious, enabled = state.currentIndex > 0) {
                             Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Anterior")
+                            Text("Anterior", maxLines = 1, softWrap = false)
                         }
-                        Button(onClick = viewModel::showNext, enabled = state.currentIndex < state.cards.lastIndex, modifier = Modifier.weight(1f)) {
+                        Button(onClick = viewModel::showNext, enabled = state.currentIndex < state.cards.lastIndex) {
                             Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Próximo")
+                            Text("Próximo", maxLines = 1, softWrap = false)
                         }
                     }
                 } else if (state.isFlipped) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            RatingButton("Errei", ReviewRating.AGAIN, viewModel, state.isSaving, Modifier.weight(1f))
-                            RatingButton("Difícil", ReviewRating.HARD, viewModel, state.isSaving, Modifier.weight(1f))
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            RatingButton("Bom", ReviewRating.GOOD, viewModel, state.isSaving, Modifier.weight(1f))
-                            RatingButton("Fácil", ReviewRating.EASY, viewModel, state.isSaving, Modifier.weight(1f))
-                        }
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        maxItemsInEachRow = 2,
+                    ) {
+                        RatingButton("Errei", ReviewRating.AGAIN, viewModel, state.isSaving)
+                        RatingButton("Difícil", ReviewRating.HARD, viewModel, state.isSaving)
+                        RatingButton("Bom", ReviewRating.GOOD, viewModel, state.isSaving)
+                        RatingButton("Fácil", ReviewRating.EASY, viewModel, state.isSaving)
                     }
                 }
             }
@@ -277,10 +285,13 @@ private fun VoiceSettingsDialog(
                     }
                 }
                 Text("Velocidade", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     speeds.forEach { speed ->
                         TextButton(onClick = { onSelectRate(speed) }) {
-                            Text(if (speechState.speechRate == speed) "✓ ${speed}x" else "${speed}x")
+                            Text(if (speechState.speechRate == speed) "✓ ${speed}x" else "${speed}x", maxLines = 1, softWrap = false)
                         }
                     }
                 }
@@ -302,7 +313,7 @@ private fun RatingButton(
     modifier: Modifier = Modifier,
 ) {
     Button(onClick = { viewModel.rateCurrentCard(rating) }, enabled = !isSaving, modifier = modifier) {
-        Text(label)
+        Text(label, maxLines = 1, softWrap = false)
     }
 }
 

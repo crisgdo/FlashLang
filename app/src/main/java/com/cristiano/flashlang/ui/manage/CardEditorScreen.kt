@@ -2,6 +2,8 @@ package com.cristiano.flashlang.ui.manage
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,7 +40,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Save
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun CardEditorScreen(
     viewModel: CardEditorViewModel,
@@ -73,11 +75,18 @@ fun CardEditorScreen(
             ) {
                 OutlinedTextField(state.term, viewModel::updateTerm, modifier = Modifier.fillMaxWidth(), label = { Text("Termo") }, singleLine = true)
                 Text("Tipo", style = MaterialTheme.typography.titleSmall)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = state.type == "word", onClick = { viewModel.updateType("word") })
-                    Text("Palavra")
-                    RadioButton(selected = state.type == "expression", onClick = { viewModel.updateType("expression") })
-                    Text("Expressão")
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = state.type == "word", onClick = { viewModel.updateType("word") })
+                        Text("Palavra", maxLines = 1, softWrap = false)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(selected = state.type == "expression", onClick = { viewModel.updateType("expression") })
+                        Text("Expressão", maxLines = 1, softWrap = false)
+                    }
                 }
                 OutlinedTextField(state.termTranslation, viewModel::updateTermTranslation, modifier = Modifier.fillMaxWidth(), label = { Text("Tradução do termo") })
                 OutlinedTextField(state.example, viewModel::updateExample, modifier = Modifier.fillMaxWidth(), label = { Text("Frase de exemplo") })
