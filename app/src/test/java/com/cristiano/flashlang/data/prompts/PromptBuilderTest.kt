@@ -43,13 +43,16 @@ class PromptBuilderTest {
     }
 
     @Test
-    fun alwaysAppendsTheSingleFormatBlockAtTheEnd() {
-        PromptTemplates.all.forEach { template ->
+    fun everyDeckPromptEndsWithTheSingleFormatBlock() {
+        PromptTemplates.all.filter { it.generatesDeck }.forEach { template ->
             val prompt = buildPrompt(template, language = "en", values = PromptInputValues(text = "some text", list = "walk"))
 
             assertTrue(prompt.endsWith(FORMAT_BLOCK))
             assertEquals(1, prompt.windowed(FORMAT_BLOCK.length).count { it == FORMAT_BLOCK })
         }
+
+        val conversation = PromptTemplates.all.single { !it.generatesDeck }
+        assertFalse(buildPrompt(conversation, "en", PromptInputValues(text = "text")).endsWith(FORMAT_BLOCK))
     }
 
     @Test

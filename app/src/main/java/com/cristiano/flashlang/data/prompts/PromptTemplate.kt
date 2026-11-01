@@ -21,6 +21,7 @@ data class PromptTemplate(
     val body: String,
     val inputs: Set<PromptInput>,
     val needsLanguage: Boolean,
+    val generatesDeck: Boolean = true,
 )
 
 data class PromptInputValues(

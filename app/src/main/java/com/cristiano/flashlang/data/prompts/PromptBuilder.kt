@@ -34,7 +34,7 @@ fun buildPrompt(
         .replace("{{FOCO}}", values.focus.nonEmptyOrMissing())
         .trimEnd()
 
-    return "$body\n\n$FORMAT_BLOCK"
+    return if (template.generatesDeck) "$body\n\n$FORMAT_BLOCK" else body
 }
 
 private fun valueFor(type: PromptInputType, values: PromptInputValues): String = when (type) {

@@ -189,8 +189,10 @@ fun PromptDetailScreen(
                 Spacer(Modifier.width(8.dp))
                 Text("Copiar prompt")
             }
-            Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
-                Text("Ir para importar")
+            if (template.generatesDeck) {
+                Button(onClick = onImport, modifier = Modifier.fillMaxWidth()) {
+                    Text("Ir para importar")
+                }
             }
         }
     }
