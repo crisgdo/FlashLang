@@ -59,7 +59,12 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long) -> Unit) {
+fun StudyScreen(
+    viewModel: StudyViewModel,
+    onBack: () -> Unit,
+    onEditCard: (Long) -> Unit,
+    onManageDeck: () -> Unit,
+) {
     val state by viewModel.state.collectAsState()
     var showCardMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -140,7 +145,10 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long
                 verticalArrangement = Arrangement.Center,
             ) {
                 if (state.allCards.isEmpty()) {
-                    Text("Este baralho ainda não tem cards.", textAlign = TextAlign.Center)
+                    Text("Este baralho ainda não tem cards", textAlign = TextAlign.Center)
+                    Button(onClick = onManageDeck, modifier = Modifier.padding(top = 16.dp)) {
+                        Text("Gerenciar baralho")
+                    }
                 } else {
                     Text("Você terminou por hoje!", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                     Button(onClick = viewModel::studyAllCards, modifier = Modifier.padding(top = 20.dp)) {

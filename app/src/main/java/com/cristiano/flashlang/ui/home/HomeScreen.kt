@@ -2,19 +2,22 @@ package com.cristiano.flashlang.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -27,7 +30,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
@@ -40,13 +50,20 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onImportClick: () -> Unit,
     onDeckClick: (Long) -> Unit,
+    onManageClick: (Long) -> Unit,
     onExportClick: (Long) -> Unit,
 ) {
     val decks by viewModel.decks.collectAsState()
     var deckToDelete by remember { mutableStateOf<DeckListItem?>(null) }
 
     Scaffold(
-        topBar = { Text("Meus baralhos", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(20.dp)) },
+        topBar = {
+            Text(
+                "Meus baralhos",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.statusBarsPadding().padding(horizontal = 20.dp, vertical = 16.dp),
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onImportClick) {
                 Icon(Icons.Outlined.Add, contentDescription = "Importar baralho")
@@ -64,7 +81,7 @@ fun HomeScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(decks, key = { it.deck.id }) { item ->
@@ -73,7 +90,7 @@ fun HomeScreen(
                         onDelete = { deckToDelete = item },
                         onClick = { onDeckClick(item.deck.id) },
                         onExport = { onExportClick(item.deck.id) },
-                        onManage = { onDeckClick(item.deck.id) },
+                        onManage = { onManageClick(item.deck.id) },
                     )
                 }
             }
@@ -95,30 +112,74 @@ fun HomeScreen(
 
 @Composable
 private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit, onExport: () -> Unit, onManage: () -> Unit) {
-    Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().semantics {
+            contentDescription = "Estudar ${item.deck.name}"
+            role = Role.Button
+        },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(item.deck.name, style = MaterialTheme.typography.titleMedium)
-                Text("${languageName(item.deck.language)} · ${item.cardCount} cards", style = MaterialTheme.typography.bodyMedium)
-                Text("${item.pendingCount} para revisar hoje", style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = item.deck.name,
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(Modifier.height(8.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    "${languageName(item.deck.language)} · ${item.cardCount} cards",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    "${item.pendingCount} para revisar hoje",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onManage) {
-                    Icon(Icons.Outlined.Edit, contentDescription = "Gerenciar baralho")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Gerenciar")
+            Spacer(Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FilledTonalButton(
+                    onClick = onManage,
+                    modifier = Modifier.weight(1f),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Icon(Icons.Outlined.Edit, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Gerenciar", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                TextButton(onClick = onExport) {
-                    Icon(Icons.Outlined.Share, contentDescription = "Exportar baralho")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Exportar")
+                FilledTonalButton(
+                    onClick = onExport,
+                    modifier = Modifier.weight(1f),
+                    shape = CircleShape,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                ) {
+                    Icon(Icons.Outlined.Share, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Exportar", maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Excluir ${item.deck.name}")
-                }
+            }
+            Spacer(Modifier.height(4.dp))
+            TextButton(onClick = onDelete) {
+                Icon(
+                    Icons.Outlined.Delete,
+                    contentDescription = "Excluir baralho",
+                    tint = MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Excluir", color = MaterialTheme.colorScheme.error)
             }
         }
     }

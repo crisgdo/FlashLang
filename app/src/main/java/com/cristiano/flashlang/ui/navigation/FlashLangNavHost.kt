@@ -51,7 +51,8 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
             HomeScreen(
                 homeViewModel,
                 onImportClick = { navController.navigate(Routes.IMPORT) },
-                onDeckClick = { deckId -> navController.navigate("manage/$deckId") },
+                onDeckClick = { deckId -> navController.navigate("study/$deckId") },
+                onManageClick = { deckId -> navController.navigate("manage/$deckId") },
                 onExportClick = { deckId ->
                     coroutineScope.launch {
                         try {
@@ -101,6 +102,7 @@ fun FlashLangNavHost(repository: DeckRepository, navController: NavHostControlle
                 studyViewModel,
                 onBack = { navController.popBackStack() },
                 onEditCard = { cardId -> navController.navigate("editCard/$deckId/$cardId") },
+                onManageDeck = { navController.navigate("manage/$deckId") },
             )
         }
         composable(
