@@ -9,8 +9,11 @@ import com.cristiano.flashlang.data.model.Card
 data class ImportDeckJson(
     val deckName: String = "",
     val language: String = "",
+    val category: String? = null,
     val cards: List<ImportCardJson> = emptyList(),
-)
+) {
+    fun normalizedCategory(): String? = category?.trim()?.takeIf(String::isNotEmpty)
+}
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable

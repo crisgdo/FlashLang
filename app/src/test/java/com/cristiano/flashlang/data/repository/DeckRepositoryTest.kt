@@ -5,6 +5,7 @@ import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckWithCards
 import com.cristiano.flashlang.data.model.DeckListItem
+import com.cristiano.flashlang.data.model.DeckCategoryCount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -110,6 +111,22 @@ class DeckRepositoryTest {
         assertEquals("Novo nome", repository.getDecks().single().name)
     }
 
+    @Test
+    fun categoriesNormalizeCaseRenameEveryDeckAndRemovalKeepsDecks() = runBlocking {
+        val repository = DeckRepository(FakeDeckDao())
+        val firstId = repository.insertDeck(Deck(name = "Verb forms", language = "en", category = " Pronúncia "))
+        val secondId = repository.insertDeck(Deck(name = "Sounds", language = "en", category = "pronúncia"))
+
+        assertEquals("Pronúncia", repository.getDecks().first { it.id == secondId }.category)
+        repository.renameCategory("pronúncia", "Fonética")
+        assertTrue(repository.getDecks().all { it.category == "Fonética" })
+
+        repository.removeCategory("fonética")
+        assertTrue(repository.getDecks().all { it.category == null })
+        assertEquals(2, repository.getDecks().size)
+        assertTrue(repository.getDecks().any { it.id == firstId })
+    }
+
     private class FakeDeckDao : DeckDao {
         private val decks = mutableListOf<Deck>()
         private val cards = mutableListOf<Card>()
@@ -148,6 +165,14 @@ class DeckRepositoryTest {
                 )
             })
         override suspend fun getDecks(): List<Deck> = decks.toList()
+        override fun observeCategoryCounts(): Flow<List<DeckCategoryCount>> = MutableStateFlow(
+            decks.groupBy { it.category?.trim()?.lowercase() ?: "" }.map { (_, groupedDecks) ->
+                DeckCategoryCount(groupedDecks.first().category, groupedDecks.size)
+            },
+        )
+        override suspend fun findCategory(category: String): String? = decks.firstOrNull {
+            it.category?.trim()?.equals(category.trim(), ignoreCase = true) == true
+        }?.category
         override fun observeCards(deckId: Long): Flow<List<Card>> = MutableStateFlow(cards.filter { it.deckId == deckId })
         override suspend fun getCards(deckId: Long): List<Card> = cards.filter { it.deckId == deckId }
         override suspend fun getCard(cardId: Long): Card? = cards.firstOrNull { it.id == cardId }
@@ -165,9 +190,9 @@ class DeckRepositoryTest {
             cards.removeAll { it.deckId == deckId }
         }
 
-        override suspend fun updateDeckContent(deckId: Long, name: String, language: String) {
+        override suspend fun updateDeckContent(deckId: Long, name: String, language: String, category: String?) {
             val index = decks.indexOfFirst { it.id == deckId }
-            if (index >= 0) decks[index] = decks[index].copy(name = name, language = language)
+            if (index >= 0) decks[index] = decks[index].copy(name = name, language = language, category = category)
         }
 
         override suspend fun renameDeck(deckId: Long, name: String) {
@@ -175,8 +200,29 @@ class DeckRepositoryTest {
             if (index >= 0) decks[index] = decks[index].copy(name = name)
         }
 
+        override suspend fun updateDeckCategory(deckId: Long, category: String?) {
+            val index = decks.indexOfFirst { it.id == deckId }
+            if (index >= 0) decks[index] = decks[index].copy(category = category)
+        }
+
+        override suspend fun renameCategory(oldCategory: String, newCategory: String) {
+            decks.indices.forEach { index ->
+                if (decks[index].category?.equals(oldCategory, ignoreCase = true) == true) {
+                    decks[index] = decks[index].copy(category = newCategory)
+                }
+            }
+        }
+
+        override suspend fun removeCategory(category: String) {
+            decks.indices.forEach { index ->
+                if (decks[index].category?.equals(category, ignoreCase = true) == true) {
+                    decks[index] = decks[index].copy(category = null)
+                }
+            }
+        }
+
         override suspend fun replaceDeck(deckId: Long, deck: Deck, cards: List<Card>) {
-            updateDeckContent(deckId, deck.name, deck.language)
+            updateDeckContent(deckId, deck.name, deck.language, deck.category)
             deleteCardsForDeck(deckId)
             insertCards(cards.map { it.copy(id = 0, deckId = deckId) })
         }

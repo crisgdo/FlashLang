@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.cristiano.flashlang.data.model.DeckListItem
+import com.cristiano.flashlang.data.model.DeckCategoryCount
 import com.cristiano.flashlang.data.repository.DeckRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -13,9 +14,23 @@ import kotlinx.coroutines.launch
 class HomeViewModel(private val repository: DeckRepository) : ViewModel() {
     val decks: StateFlow<List<DeckListItem>> = repository.observeDecksWithCardCount()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val categories: StateFlow<List<DeckCategoryCount>> = repository.observeCategoryCounts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun deleteDeck(deckId: Long) {
         viewModelScope.launch { repository.deleteDeck(deckId) }
+    }
+
+    fun setDeckCategory(deckId: Long, category: String?) {
+        viewModelScope.launch { repository.setDeckCategory(deckId, category) }
+    }
+
+    fun renameCategory(oldCategory: String, newCategory: String) {
+        viewModelScope.launch { repository.renameCategory(oldCategory, newCategory) }
+    }
+
+    fun removeCategory(category: String) {
+        viewModelScope.launch { repository.removeCategory(category) }
     }
 
     class Factory(private val repository: DeckRepository) : ViewModelProvider.Factory {

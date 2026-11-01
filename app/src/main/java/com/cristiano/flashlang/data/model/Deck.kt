@@ -9,4 +9,5 @@ data class Deck(
     val name: String,
     val language: String,
     val createdAt: Long = System.currentTimeMillis(),
+    val category: String? = null,
 )

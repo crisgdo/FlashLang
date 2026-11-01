@@ -5,7 +5,7 @@ import com.cristiano.flashlang.data.model.UserPrompt
 const val FORMAT_BLOCK = """FORMATO DE RESPOSTA (obrigatório): responda APENAS com JSON válido,
 sem texto antes ou depois, sem bloco de código, sem aspas curvas,
 sem comentários e sem vírgula depois do último item, neste formato:
-{"deckName": "...", "language": "en ou es", "cards": [{"term": "...",
+{"deckName": "...", "language": "en ou es", "category": "... (opcional)", "cards": [{"term": "...",
 "type": "word ou expression", "termTranslation": "...", "example":
 "...", "exampleTranslation": "...", "ipa": "... (opcional)",
 "note": "... (opcional)", "format": "basic ou cloze (opcional)"}]}.
@@ -37,7 +37,9 @@ fun buildPrompt(
         .replace("{{FOCO}}", values.focus.nonEmptyOrMissing())
         .trimEnd()
 
-    return if (template.generatesDeck) "$body\n\n$FORMAT_BLOCK" else body
+    if (!template.generatesDeck) return body
+    val categoryInstruction = if (template.id.startsWith("user-")) "" else "\nUse \"category\": \"${template.category}\"."
+    return "$body\n\n$FORMAT_BLOCK$categoryInstruction"
 }
 
 fun UserPrompt.toPromptTemplate(): PromptTemplate {

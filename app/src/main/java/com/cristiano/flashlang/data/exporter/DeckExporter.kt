@@ -11,6 +11,7 @@ import kotlinx.serialization.json.Json
 data class ExportDeckJson(
     val deckName: String,
     val language: String,
+    val category: String? = null,
     val cards: List<ExportCardJson>,
 )
 
@@ -37,6 +38,7 @@ object DeckExporter {
         ExportDeckJson(
             deckName = deck.name,
             language = deck.language,
+            category = deck.category?.trim()?.takeIf(String::isNotEmpty),
             cards = cards.map { card ->
                 ExportCardJson(
                     term = card.term,

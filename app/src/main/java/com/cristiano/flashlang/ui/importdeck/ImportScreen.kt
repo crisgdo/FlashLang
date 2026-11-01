@@ -126,6 +126,13 @@ fun ImportScreen(
                 Text("Mais prompts")
             }
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
+            OutlinedTextField(
+                value = state.categoryName,
+                onValueChange = viewModel::onCategoryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Categoria (opcional)") },
+                singleLine = true,
+            )
             Button(
                 onClick = { documentPicker.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
                 enabled = !state.isSaving,

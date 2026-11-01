@@ -30,6 +30,7 @@ class DeckImporter(
         val deck = parsed.copy(
             deckName = parsed.deckName.trim(),
             language = normalizeLanguage(parsed.language),
+            category = parsed.normalizedCategory(),
             cards = parsed.cards.map { card ->
                 card.copy(
                     type = normalizeType(card.type),

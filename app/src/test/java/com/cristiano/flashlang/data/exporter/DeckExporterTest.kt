@@ -64,6 +64,15 @@ class DeckExporterTest {
         assertEquals(card.note, importedCard.note)
     }
 
+    @Test
+    fun exportThenImportPreservesDeckCategory() {
+        val categorizedDeck = deck.copy(category = "Pronúncia")
+        val exported = DeckExporter.toJson(categorizedDeck, listOf(card))
+        assertTrue(exported.contains("\"category\": \"Pronúncia\""))
+        val imported = DeckImporter().parse(exported) as DeckImportResult.Success
+        assertEquals("Pronúncia", imported.deck.category)
+    }
+
     private companion object {
         val deck = Deck(id = 7, name = "Viagem", language = "en", createdAt = 123)
         val card = Card(

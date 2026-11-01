@@ -4,6 +4,7 @@ import com.cristiano.flashlang.data.local.DeckDao
 import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckListItem
+import com.cristiano.flashlang.data.model.DeckCategoryCount
 import kotlinx.coroutines.flow.Flow
 
 class DeckRepository(private val deckDao: DeckDao) {
@@ -18,7 +19,7 @@ class DeckRepository(private val deckDao: DeckDao) {
                 dueAt = createdAt,
             )
         }
-        return deckDao.insertDeckWithCards(deck, newCards)
+        return deckDao.insertDeckWithCards(deck.copy(category = canonicalCategory(deck.category)), newCards)
     }
 
     fun observeDecks(): Flow<List<Deck>> = deckDao.observeDecks()
@@ -28,6 +29,33 @@ class DeckRepository(private val deckDao: DeckDao) {
 
     suspend fun getDecks(): List<Deck> = deckDao.getDecks()
 
+    fun observeCategoryCounts(): Flow<List<DeckCategoryCount>> = deckDao.observeCategoryCounts()
+
+    suspend fun setDeckCategory(deckId: Long, category: String?) {
+        deckDao.updateDeckCategory(deckId, canonicalCategory(category))
+    }
+
+    suspend fun renameCategory(oldCategory: String, newCategory: String) {
+        val normalizedOld = oldCategory.trim()
+        val normalizedNew = newCategory.trim()
+        require(normalizedOld.isNotEmpty()) { "A categoria atual não pode ficar vazia." }
+        require(normalizedNew.isNotEmpty()) { "O nome da categoria não pode ficar vazio." }
+        if (normalizedOld.equals(normalizedNew, ignoreCase = true)) return
+        val decks = deckDao.getDecks()
+        val existingSpelling = decks.firstOrNull {
+            it.category?.trim()?.equals(normalizedNew, ignoreCase = true) == true &&
+                it.category?.trim()?.equals(normalizedOld, ignoreCase = true) != true
+        }?.category?.trim() ?: normalizedNew
+        decks.filter { it.category?.trim()?.equals(normalizedOld, ignoreCase = true) == true }
+            .forEach { deckDao.updateDeckCategory(it.id, existingSpelling) }
+    }
+
+    suspend fun removeCategory(category: String) {
+        val normalized = category.trim()
+        deckDao.getDecks().filter { it.category?.trim()?.equals(normalized, ignoreCase = true) == true }
+            .forEach { deckDao.updateDeckCategory(it.id, null) }
+    }
+
     suspend fun findDeckByName(name: String): Deck? =
         deckDao.getDecks().firstOrNull { it.name.equals(name.trim(), ignoreCase = true) }
 
@@ -35,7 +63,7 @@ class DeckRepository(private val deckDao: DeckDao) {
         val createdAt = System.currentTimeMillis()
         deckDao.replaceDeck(
             deckId,
-            deck,
+            deck.copy(category = canonicalCategory(deck.category)),
             cards.map { card ->
                 card.copy(id = 0, deckId = deckId, easeFactor = 2.5, intervalDays = 0, repetitions = 0, dueAt = createdAt)
             },
@@ -112,4 +140,11 @@ class DeckRepository(private val deckDao: DeckDao) {
     suspend fun updateCard(card: Card) = deckDao.updateCard(card)
 
     suspend fun deleteDeck(deckId: Long) = deckDao.deleteDeck(deckId)
+
+    private suspend fun canonicalCategory(category: String?): String? {
+        val normalized = category?.trim()?.takeIf(String::isNotEmpty) ?: return null
+        return deckDao.getDecks().firstOrNull {
+            it.category?.trim()?.equals(normalized, ignoreCase = true) == true
+        }?.category?.trim() ?: normalized
+    }
 }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 data class ImportUiState(
     val jsonText: String = "",
+    val categoryName: String = "",
     val errorMessage: String? = null,
     val isSaving: Boolean = false,
     val imported: Boolean = false,
@@ -33,8 +34,20 @@ class ImportViewModel(
     val state: StateFlow<ImportUiState> = _state.asStateFlow()
 
     fun onJsonChanged(value: String) {
-        _state.update { it.copy(jsonText = value, errorMessage = null, duplicateDeckId = null, duplicateDeckName = null, pendingDeck = null) }
+        val parsedCategory = (importer.parse(value) as? DeckImportResult.Success)?.deck?.normalizedCategory().orEmpty()
+        _state.update {
+            it.copy(
+                jsonText = value,
+                categoryName = parsedCategory,
+                errorMessage = null,
+                duplicateDeckId = null,
+                duplicateDeckName = null,
+                pendingDeck = null,
+            )
+        }
     }
+
+    fun onCategoryChanged(value: String) { _state.update { it.copy(categoryName = value) } }
 
     fun onFileReadError() {
         _state.update { it.copy(errorMessage = "Não foi possível ler o arquivo selecionado.") }
@@ -44,21 +57,23 @@ class ImportViewModel(
         when (val result = importer.parse(_state.value.jsonText)) {
             is DeckImportResult.Error -> _state.update { it.copy(errorMessage = result.message) }
             is DeckImportResult.Success -> {
+                val selectedCategory = _state.value.categoryName.trim().takeIf(String::isNotEmpty)
+                val deckWithCategory = result.deck.copy(category = selectedCategory)
                 _state.update { it.copy(errorMessage = null, isSaving = true) }
                 viewModelScope.launch {
                     try {
-                        val existing = repository.findDeckByName(result.deck.deckName)
+                        val existing = repository.findDeckByName(deckWithCategory.deckName)
                         if (existing != null) {
                             _state.update {
                                 it.copy(
                                     isSaving = false,
                                     duplicateDeckId = existing.id,
                                     duplicateDeckName = existing.name,
-                                    pendingDeck = result.deck,
+                                    pendingDeck = deckWithCategory,
                                 )
                             }
                         } else {
-                            saveDeck(result.deck, name = result.deck.deckName)
+                            saveDeck(deckWithCategory, name = deckWithCategory.deckName)
                         }
                     } catch (_: Exception) {
                         _state.update { it.copy(isSaving = false, errorMessage = "Não foi possível verificar os baralhos existentes.") }
@@ -103,7 +118,7 @@ class ImportViewModel(
         replaceId: Long? = null,
     ) {
         try {
-            val deck = Deck(name = name.trim(), language = importedDeck.language)
+            val deck = Deck(name = name.trim(), language = importedDeck.language, category = importedDeck.normalizedCategory())
             val cards = importedDeck.cards.map { it.toCard(deckId = replaceId ?: 0) }
             if (replaceId == null) repository.insertDeck(deck, cards)
             else repository.replaceDeck(replaceId, deck, cards)

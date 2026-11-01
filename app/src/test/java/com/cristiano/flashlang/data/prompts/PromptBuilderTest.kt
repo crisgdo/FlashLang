@@ -18,7 +18,7 @@ class PromptBuilderTest {
         )
 
         assertTrue(prompt.contains("professor de espanhol"))
-        assertTrue(prompt.endsWith("TEXTO:\nA short story\n\n$FORMAT_BLOCK"))
+        assertTrue(prompt.endsWith("TEXTO:\nA short story\n\n$FORMAT_BLOCK\nUse \"category\": \"Vocabulário\"."))
     }
 
     @Test
@@ -48,12 +48,27 @@ class PromptBuilderTest {
         PromptTemplates.all.filter { it.generatesDeck }.forEach { template ->
             val prompt = buildPrompt(template, language = "en", values = PromptInputValues(text = "some text", list = "walk"))
 
-            assertTrue(prompt.endsWith(FORMAT_BLOCK))
+            assertTrue(prompt.endsWith("$FORMAT_BLOCK\nUse \"category\": \"${template.category}\"."))
             assertEquals(1, prompt.windowed(FORMAT_BLOCK.length).count { it == FORMAT_BLOCK })
         }
 
         val conversation = PromptTemplates.all.single { !it.generatesDeck }
         assertFalse(buildPrompt(conversation, "en", PromptInputValues(text = "text")).endsWith(FORMAT_BLOCK))
+    }
+
+    @Test
+    fun readyPromptHasItsCategoryInstructionButUserPromptDoesNot() {
+        val readyPrompt = buildPrompt(vocabularyPrompt, "en", PromptInputValues(text = "story"))
+        assertTrue(readyPrompt.contains("Use \"category\": \"Vocabulário\"."))
+
+        val ownPrompt = UserPrompt(
+            id = 44,
+            title = "Meu vocabulário",
+            description = "",
+            body = "{{TEXTO}}",
+        ).toPromptTemplate()
+        val generatedOwnPrompt = buildPrompt(ownPrompt, "en", PromptInputValues(text = "story"))
+        assertFalse(generatedOwnPrompt.contains("Use \"category\":"))
     }
 
     @Test
@@ -94,6 +109,6 @@ class PromptBuilderTest {
 
         assertTrue(template.generatesDeck)
         assertTrue(generated.contains("Use \"format\": \"cloze\" em todos os cards."))
-        assertTrue(generated.endsWith(FORMAT_BLOCK))
+        assertTrue(generated.endsWith("$FORMAT_BLOCK\nUse \"category\": \"Vocabulário\"."))
     }
 }

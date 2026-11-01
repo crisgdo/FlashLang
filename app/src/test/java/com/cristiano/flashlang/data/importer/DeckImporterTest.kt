@@ -135,6 +135,20 @@ class DeckImporterTest {
     }
 
     @Test
+    fun importsOptionalCategoryAndTrimsIt() {
+        val withCategory = importer.parse(validJson.replace("\"language\": \"en\",", "\"language\": \"en\", \"category\": \"  Pronúncia  \","))
+            as DeckImportResult.Success
+        assertEquals("Pronúncia", withCategory.deck.category)
+
+        val blankCategory = importer.parse(validJson.replace("\"language\": \"en\",", "\"language\": \"en\", \"category\": \"  \","))
+            as DeckImportResult.Success
+        assertEquals(null, blankCategory.deck.category)
+
+        val withoutCategory = importer.parse(validJson) as DeckImportResult.Success
+        assertEquals(null, withoutCategory.deck.category)
+    }
+
+    @Test
     fun rejectsBlankDeckName() {
         val error = importer.parse(validJson.replace("Travel", "   ")) as DeckImportResult.Error
 
