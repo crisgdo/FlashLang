@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -19,6 +20,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -43,6 +45,13 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.scheduler.ReviewRating
 import java.util.Locale
@@ -99,14 +108,19 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long
         topBar = {
             TopAppBar(
                 title = { Text("Estudar") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Voltar") } },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar") }
+                },
                 actions = {
                     val currentCard = state.cards.getOrNull(if (state.isAllCardsMode) state.currentIndex else 0)
                     if (currentCard != null) {
-                        androidx.compose.material3.IconButton(onClick = { showCardMenu = true }) { Text("⋮") }
+                        IconButton(onClick = { showCardMenu = true }) {
+                            Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
+                        }
                         DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
                             DropdownMenuItem(
                                 text = { Text("Editar card") },
+                                leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
                                 onClick = { showCardMenu = false; onEditCard(currentCard.id) },
                             )
                         }
@@ -130,6 +144,8 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long
                 } else {
                     Text("Você terminou por hoje!", style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
                     Button(onClick = viewModel::studyAllCards, modifier = Modifier.padding(top = 20.dp)) {
+                        Icon(Icons.AutoMirrored.Outlined.MenuBook, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
                         Text("Estudar tudo mesmo assim")
                     }
                 }
@@ -157,9 +173,13 @@ fun StudyScreen(viewModel: StudyViewModel, onBack: () -> Unit, onEditCard: (Long
                 if (state.isAllCardsMode) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(onClick = viewModel::showPrevious, enabled = state.currentIndex > 0, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text("Anterior")
                         }
                         Button(onClick = viewModel::showNext, enabled = state.currentIndex < state.cards.lastIndex, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text("Próximo")
                         }
                     }
@@ -209,7 +229,7 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                 IconButton(
                     onClick = { onSpeak(card.term) },
                     modifier = Modifier.semantics { contentDescription = "Ouvir ${card.term}" },
-                ) { Text("🔊") }
+                ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
                 Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
                 Text("Toque para virar", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
             } else {
@@ -224,7 +244,7 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
                         IconButton(
                             onClick = { onSpeak(card.example) },
                             modifier = Modifier.semantics { contentDescription = "Ouvir frase de exemplo" },
-                        ) { Text("🔊") }
+                        ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
                     }
                     Text(card.exampleTranslation, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 }

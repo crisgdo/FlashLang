@@ -3,14 +3,17 @@ package com.cristiano.flashlang.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -24,9 +27,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Share
 import com.cristiano.flashlang.data.model.DeckListItem
 
 @Composable
@@ -42,7 +48,9 @@ fun HomeScreen(
     Scaffold(
         topBar = { Text("Meus baralhos", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(20.dp)) },
         floatingActionButton = {
-            FloatingActionButton(onClick = onImportClick) { Text("+") }
+            FloatingActionButton(onClick = onImportClick) {
+                Icon(Icons.Outlined.Add, contentDescription = "Importar baralho")
+            }
         },
     ) { padding ->
         if (decks.isEmpty()) {
@@ -98,10 +106,18 @@ private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Uni
                 Text("${item.pendingCount} para revisar hoje", style = MaterialTheme.typography.bodySmall)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onManage) { Text("Gerenciar") }
-                TextButton(onClick = onExport) { Text("Exportar") }
+                TextButton(onClick = onManage) {
+                    Icon(Icons.Outlined.Edit, contentDescription = "Gerenciar baralho")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Gerenciar")
+                }
+                TextButton(onClick = onExport) {
+                    Icon(Icons.Outlined.Share, contentDescription = "Exportar baralho")
+                    Spacer(Modifier.width(4.dp))
+                    Text("Exportar")
+                }
                 IconButton(onClick = onDelete) {
-                    Text("🗑", modifier = Modifier.semantics { contentDescription = "Excluir ${item.deck.name}" })
+                    Icon(Icons.Outlined.Delete, contentDescription = "Excluir ${item.deck.name}")
                 }
             }
         }

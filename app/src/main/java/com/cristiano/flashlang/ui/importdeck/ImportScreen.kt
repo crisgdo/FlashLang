@@ -15,6 +15,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -38,6 +40,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.FileOpen
+import androidx.compose.material.icons.outlined.FileDownload
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -70,9 +77,14 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = { TopAppBar(title = { Text("Importar baralho") }, navigationIcon = {
-            androidx.compose.material3.TextButton(onClick = onBack) { Text("Voltar") }
-        }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Importar baralho") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar") }
+                },
+            )
+        },
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(20.dp),
@@ -92,13 +104,21 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
                     coroutineScope.launch { snackbarHostState.showSnackbar("Prompt copiado!") }
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Copiar prompt") }
+            ) {
+                Icon(Icons.Outlined.ContentCopy, contentDescription = null)
+                androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+                Text("Copiar prompt")
+            }
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
             Button(
                 onClick = { documentPicker.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
                 enabled = !state.isSaving,
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Escolher arquivo") }
+            ) {
+                Icon(Icons.Outlined.FileOpen, contentDescription = null)
+                androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+                Text("Escolher arquivo")
+            }
             OutlinedTextField(
                 value = state.jsonText,
                 onValueChange = viewModel::onJsonChanged,
@@ -115,7 +135,11 @@ fun ImportScreen(viewModel: ImportViewModel, onImportSuccess: () -> Unit, onBack
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 if (state.isSaving) CircularProgressIndicator()
-                else Text("Importar")
+                else {
+                    Icon(Icons.Outlined.FileDownload, contentDescription = null)
+                    androidx.compose.foundation.layout.Spacer(Modifier.width(8.dp))
+                    Text("Importar")
+                }
             }
         }
     }
