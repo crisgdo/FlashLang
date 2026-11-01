@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +76,10 @@ import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VolumeUp
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material.icons.outlined.SlowMotionVideo
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.importer.ClozeText
@@ -188,12 +193,13 @@ fun StudyScreen(
                             Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
                         }
                         DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
-                            currentCard?.let { card ->
+                            if (currentCard != null) {
                                 DropdownMenuItem(
                                     text = { Text("Editar card") },
                                     leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                                    onClick = { showCardMenu = false; onEditCard(card.id) },
+                                    onClick = { showCardMenu = false; onEditCard(currentCard.id) },
                                 )
+                                HorizontalDivider()
                                 DropdownMenuItem(
                                     text = { Text("Voz") },
                                     leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
@@ -201,21 +207,49 @@ fun StudyScreen(
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("Modo de estudo") },
+                                text = {
+                                    Column {
+                                        Text("Modo de estudo")
+                                        Text(
+                                            if (studyMode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.School, contentDescription = null) },
                                 onClick = { showCardMenu = false; showStudyModeDialog = true },
                             )
                             DropdownMenuItem(
-                                text = { Text("Reproduzir automaticamente") },
+                                enabled = studyMode == StudyMode.PRONUNCIATION,
+                                text = {
+                                    Column {
+                                        Text("Reproduzir automaticamente")
+                                        if (studyMode == StudyMode.STANDARD) {
+                                            Text(
+                                                "Disponível no modo Pronúncia",
+                                                style = MaterialTheme.typography.bodySmall,
+                                            )
+                                        }
+                                    }
+                                },
+                                leadingIcon = { Icon(Icons.Outlined.PlayCircle, contentDescription = null) },
                                 trailingIcon = {
                                     Switch(
                                         checked = autoplayEnabled,
-                                        onCheckedChange = { enabled ->
+                                        enabled = studyMode == StudyMode.PRONUNCIATION,
+                                        onCheckedChange = if (studyMode == StudyMode.PRONUNCIATION) { enabled ->
                                             autoplayEnabled = enabled
                                             deckPreferences.setAutoplayEnabled(state.deckId, enabled)
-                                        },
+                                        } else null,
                                     )
                                 },
-                                onClick = { autoplayEnabled = !autoplayEnabled; deckPreferences.setAutoplayEnabled(state.deckId, autoplayEnabled) },
+                                onClick = {
+                                    if (studyMode == StudyMode.PRONUNCIATION) {
+                                        autoplayEnabled = !autoplayEnabled
+                                        deckPreferences.setAutoplayEnabled(state.deckId, autoplayEnabled)
+                                    }
+                                },
                             )
                         }
                     }
@@ -505,8 +539,16 @@ private fun StudyCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    TextButton(onClick = { onSpeak(card.term) }) { Text("Ouvir de novo", maxLines = 1, softWrap = false) }
-                    TextButton(onClick = { onSpeakSlow(card.term) }) { Text("Ouvir devagar", maxLines = 1, softWrap = false) }
+                    TextButton(onClick = { onSpeak(card.term) }) {
+                        Icon(Icons.Outlined.Replay, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Ouvir de novo", maxLines = 1, softWrap = false)
+                    }
+                    TextButton(onClick = { onSpeakSlow(card.term) }) {
+                        Icon(Icons.Outlined.SlowMotionVideo, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text("Ouvir devagar", maxLines = 1, softWrap = false)
+                    }
                 }
                 if (!wordRevealed) {
                     TextButton(onClick = onRevealWord) {
