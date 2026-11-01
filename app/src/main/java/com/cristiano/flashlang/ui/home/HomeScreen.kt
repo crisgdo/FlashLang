@@ -1,23 +1,22 @@
 package com.cristiano.flashlang.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -42,6 +41,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
 import com.cristiano.flashlang.data.model.DeckListItem
 
@@ -112,6 +112,7 @@ fun HomeScreen(
 
 @Composable
 private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Unit, onExport: () -> Unit, onManage: () -> Unit) {
+    var menuExpanded by remember(item.deck.id) { mutableStateOf(false) }
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().semantics {
@@ -119,67 +120,58 @@ private fun DeckRow(item: DeckListItem, onDelete: () -> Unit, onClick: () -> Uni
             role = Role.Button
         },
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = item.deck.name,
+        Box(Modifier.fillMaxWidth().padding(16.dp)) {
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(8.dp))
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "${languageName(item.deck.language)} · ${item.cardCount} cards",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Text(
-                    "${item.pendingCount} para revisar hoje",
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            Spacer(Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FilledTonalButton(
-                    onClick = onManage,
-                    modifier = Modifier.weight(1f),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                ) {
-                    Icon(Icons.Outlined.Edit, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Gerenciar", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                FilledTonalButton(
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f),
-                    shape = CircleShape,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                ) {
-                    Icon(Icons.Outlined.Share, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Exportar", maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Spacer(Modifier.height(4.dp))
-            TextButton(onClick = onDelete) {
-                Icon(
-                    Icons.Outlined.Delete,
-                    contentDescription = "Excluir baralho",
-                    tint = MaterialTheme.colorScheme.error,
+                Text(
+                    text = item.deck.name,
+                    modifier = Modifier.fillMaxWidth().padding(end = 48.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Start,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Spacer(Modifier.width(8.dp))
-                Text("Excluir", color = MaterialTheme.colorScheme.error)
+                Text(
+                    "${languageName(item.deck.language)} · ${item.cardCount} cards\n${item.pendingCount} para revisar hoje",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start,
+                )
+            }
+
+            Box(Modifier.align(Alignment.TopEnd)) {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Gerenciar") },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                        onClick = { menuExpanded = false; onManage() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Exportar") },
+                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                        onClick = { menuExpanded = false; onExport() },
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = { menuExpanded = false; onDelete() },
+                    )
+                }
             }
         }
     }

@@ -1,6 +1,11 @@
 package com.cristiano.flashlang.ui.study
 
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
+import android.content.Context
+import android.content.Intent
+import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +18,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -27,6 +35,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -51,9 +60,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.RecordVoiceOver
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.scheduler.ReviewRating
+import com.cristiano.flashlang.BuildConfig
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -67,40 +78,45 @@ fun StudyScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showCardMenu by remember { mutableStateOf(false) }
+    var showVoiceDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    var ttsReady by remember { mutableStateOf(false) }
-    var ttsInitializationFailed by remember { mutableStateOf(false) }
-    val textToSpeech = remember(context) {
-        TextToSpeech(context.applicationContext) { status ->
-            ttsReady = status == TextToSpeech.SUCCESS
-            ttsInitializationFailed = status != TextToSpeech.SUCCESS
-        }
+    var speechEngineState by remember { mutableStateOf(SpeechEngineState()) }
+    val speechController = remember(context) {
+        SpeechEngineController(
+            context.applicationContext,
+            onStateChanged = { speechEngineState = it },
+            onNetworkVoiceFailure = {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("A voz online falhou por falta de conexão. Uma voz offline foi selecionada.")
+                }
+            },
+        )
     }
-    DisposableEffect(textToSpeech) {
+    DisposableEffect(speechController, state.language) {
+        speechController.initialize(state.language)
         onDispose {
-            textToSpeech.stop()
-            textToSpeech.shutdown()
+            speechController.shutdown()
         }
     }
 
     fun speak(text: String) {
-        if (!ttsReady) {
-            if (ttsInitializationFailed) {
+        if (!speechEngineState.isReady) {
+            if (speechEngineState.initializationFailed) {
                 coroutineScope.launch { snackbarHostState.showSnackbar(VOICE_UNAVAILABLE_MESSAGE) }
             }
             return
         }
-        val locale = when (state.language) {
-            "es" -> Locale("es", "ES")
-            else -> Locale.US
-        }
-        val languageStatus = textToSpeech.setLanguage(locale)
-        if (languageStatus == TextToSpeech.LANG_MISSING_DATA || languageStatus == TextToSpeech.LANG_NOT_SUPPORTED) {
-            coroutineScope.launch { snackbarHostState.showSnackbar(VOICE_UNAVAILABLE_MESSAGE) }
-        } else {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "flashlang-study")
+        speechController.speak(text)
+    }
+
+    LaunchedEffect(speechEngineState.engine, state.language) {
+        val textToSpeech = speechEngineState.engine
+        if (speechEngineState.isReady && textToSpeech != null &&
+            textToSpeech.isLanguageAvailable(studyLocale(state.language)) < TextToSpeech.LANG_AVAILABLE
+        ) {
+            snackbarHostState.showSnackbar(VOICE_UNAVAILABLE_MESSAGE)
         }
     }
 
@@ -127,6 +143,11 @@ fun StudyScreen(
                                 text = { Text("Editar card") },
                                 leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
                                 onClick = { showCardMenu = false; onEditCard(currentCard.id) },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Voz") },
+                                leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
+                                onClick = { showCardMenu = false; showVoiceDialog = true },
                             )
                         }
                     }
@@ -206,6 +227,70 @@ fun StudyScreen(
             }
         }
     }
+
+    if (showVoiceDialog) {
+        VoiceSettingsDialog(
+            speechState = speechEngineState,
+            onSelectVoice = speechController::selectVoice,
+            onTestVoice = speechController::testVoice,
+            onSelectRate = speechController::setSpeechRate,
+            onOpenAndroidSettings = {
+                context.startActivity(Intent("com.android.settings.TTS_SETTINGS"))
+            },
+            onDismiss = { showVoiceDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun VoiceSettingsDialog(
+    speechState: SpeechEngineState,
+    onSelectVoice: (Voice) -> Unit,
+    onTestVoice: (Voice) -> Unit,
+    onSelectRate: (Float) -> Unit,
+    onOpenAndroidSettings: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val speeds = listOf(0.75f, 1f, 1.25f)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Voz") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                if (speechState.voices.isEmpty()) {
+                    Text("Nenhuma voz disponível para este idioma.")
+                } else {
+                    speechState.voices.forEachIndexed { index, voice ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = voice.name == speechState.selectedVoiceName,
+                                onClick = { onSelectVoice(voice) },
+                            )
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "Voz ${index + 1}${if (voice.isNetworkConnectionRequired) " (online)" else ""}",
+                                )
+                                Text(voice.name, style = MaterialTheme.typography.bodySmall)
+                            }
+                            TextButton(onClick = { onTestVoice(voice) }) { Text("Testar") }
+                        }
+                    }
+                }
+                Text("Velocidade", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    speeds.forEach { speed ->
+                        TextButton(onClick = { onSelectRate(speed) }) {
+                            Text(if (speechState.speechRate == speed) "✓ ${speed}x" else "${speed}x")
+                        }
+                    }
+                }
+                TextButton(onClick = onOpenAndroidSettings) {
+                    Text("Configurações de voz do Android")
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
+    )
 }
 
 @Composable
@@ -263,3 +348,171 @@ private fun StudyCard(card: FlashCard, isFlipped: Boolean, onClick: () -> Unit, 
 
 private const val VOICE_UNAVAILABLE_MESSAGE =
     "Voz não disponível. Instale o idioma nas configurações de texto para fala do Android."
+
+private const val TTS_LOG_TAG = "FlashLangTTS"
+
+private data class SpeechEngineState(
+    val engine: TextToSpeech? = null,
+    val isReady: Boolean = false,
+    val initializationFailed: Boolean = false,
+    val voices: List<Voice> = emptyList(),
+    val selectedVoiceName: String? = null,
+    val speechRate: Float = 1f,
+)
+
+private fun studyLocale(language: String): Locale = when (language) {
+    "es" -> Locale("es", "ES")
+    else -> Locale.US
+}
+
+private class SpeechEngineController(
+    private val context: Context,
+    private val onStateChanged: (SpeechEngineState) -> Unit,
+    private val onNetworkVoiceFailure: () -> Unit,
+) {
+    private var engine: TextToSpeech? = null
+    private var generation = 0
+    private var language = "en"
+    private var availableVoices: List<Voice> = emptyList()
+    private var selectedVoice: Voice? = null
+    private var speechRate = 1f
+    private val preferences = context.getSharedPreferences("flashlang_tts_preferences", Context.MODE_PRIVATE)
+
+    fun initialize(language: String) {
+        this.language = language
+        speechRate = preferences.getFloat(rateKey(), 1f)
+        initializeEngine()
+    }
+
+    fun selectVoice(voice: Voice) {
+        if (availableVoices.none { it.name == voice.name }) return
+        selectedVoice = voice
+        preferences.edit().putString(voiceKey(), voice.name).apply()
+        engine?.setVoice(voice)
+        publishReadyState()
+    }
+
+    fun setSpeechRate(rate: Float) {
+        if (rate !in listOf(0.75f, 1f, 1.25f)) return
+        speechRate = rate
+        preferences.edit().putFloat(rateKey(), rate).apply()
+        engine?.setSpeechRate(rate)
+        publishReadyState()
+    }
+
+    fun speak(text: String) {
+        val textToSpeech = engine ?: return
+        val locale = studyLocale(language)
+        if (textToSpeech.isLanguageAvailable(locale) < TextToSpeech.LANG_AVAILABLE) return
+        selectedVoice?.let(textToSpeech::setVoice) ?: textToSpeech.setLanguage(locale)
+        textToSpeech.setSpeechRate(speechRate)
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "flashlang-study")
+    }
+
+    fun testVoice(voice: Voice) {
+        val textToSpeech = engine ?: return
+        val previousVoice = selectedVoice
+        textToSpeech.setVoice(voice)
+        textToSpeech.setSpeechRate(speechRate)
+        val sample = if (language == "es") "Hola, esta es una muestra de voz." else "Hello, this is a sample voice."
+        textToSpeech.speak(sample, TextToSpeech.QUEUE_FLUSH, null, "flashlang-voice-test")
+        previousVoice?.let(textToSpeech::setVoice) ?: textToSpeech.setLanguage(studyLocale(language))
+    }
+
+    fun shutdown() {
+        generation++
+        engine?.stop()
+        engine?.shutdown()
+        engine = null
+    }
+
+    private fun initializeEngine() {
+        val requestGeneration = ++generation
+        lateinit var candidate: TextToSpeech
+        val listener = TextToSpeech.OnInitListener { status ->
+            if (requestGeneration != generation) {
+                candidate.shutdown()
+            } else if (status == TextToSpeech.SUCCESS) {
+                engine = candidate
+                val locale = studyLocale(language)
+                availableVoices = candidate.voices.orEmpty()
+                    .filter { it.locale.language == locale.language && it.locale.country == locale.country }
+                val savedVoiceName = preferences.getString(voiceKey(), null)
+                selectedVoice = availableVoices.firstOrNull { it.name == savedVoiceName }
+                    ?: availableVoices.sortedWith(
+                        compareBy<Voice> { it.isNetworkConnectionRequired }
+                            .thenByDescending { it.quality }
+                            .thenBy { it.name.lowercase(Locale.ROOT) },
+                    ).firstOrNull()
+                selectedVoice?.let(candidate::setVoice) ?: candidate.setLanguage(locale)
+                candidate.setSpeechRate(speechRate)
+                if (savedVoiceName != null && selectedVoice?.name != savedVoiceName) {
+                    preferences.edit().remove(voiceKey()).apply()
+                }
+                if (BuildConfig.DEBUG) Log.i(TTS_LOG_TAG, "tts.defaultEngine=${candidate.defaultEngine}")
+                candidate.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String) = Unit
+                    override fun onDone(utteranceId: String) = Unit
+                    override fun onError(utteranceId: String) {
+                        fallbackFromFailedOnlineVoice(utteranceId)
+                    }
+                    override fun onError(utteranceId: String, errorCode: Int) {
+                        if (errorCode == TextToSpeech.ERROR_NETWORK) {
+                            fallbackFromFailedOnlineVoice(utteranceId)
+                        }
+                    }
+                })
+                publishReadyState()
+            } else {
+                candidate.shutdown()
+                if (engine === candidate) engine = null
+                onStateChanged(SpeechEngineState(initializationFailed = true))
+            }
+        }
+
+        try {
+            candidate = TextToSpeech(context, listener)
+            engine = candidate
+        } catch (_: Exception) {
+            onStateChanged(SpeechEngineState(initializationFailed = true))
+        }
+    }
+
+    private fun fallbackFromFailedOnlineVoice(utteranceId: String) {
+        if (utteranceId != "flashlang-study" && utteranceId != "flashlang-voice-test") return
+        val failedVoice = selectedVoice ?: return
+        if (!failedVoice.isNetworkConnectionRequired) return
+        val offlineVoice = availableVoices
+            .filterNot { it.isNetworkConnectionRequired }
+            .sortedWith(
+                compareByDescending<Voice> { it.quality }
+                    .thenBy { it.name.lowercase(Locale.ROOT) },
+            )
+            .firstOrNull()
+            ?: return
+        selectedVoice = offlineVoice
+        preferences.edit().putString(voiceKey(), offlineVoice.name).apply()
+        engine?.setVoice(offlineVoice)
+        engine?.setSpeechRate(speechRate)
+        publishReadyState()
+        onNetworkVoiceFailure()
+    }
+
+    private fun publishReadyState() {
+        onStateChanged(
+            SpeechEngineState(
+                engine = engine,
+                isReady = engine != null,
+                voices = availableVoices.sortedWith(
+                    compareBy<Voice> { it.name != selectedVoice?.name }
+                        .thenBy { it.name.lowercase(Locale.ROOT) },
+                ),
+                selectedVoiceName = selectedVoice?.name,
+                speechRate = speechRate,
+            ),
+        )
+    }
+
+    private fun voiceKey() = "voice_$language"
+    private fun rateKey() = "rate_$language"
+}
