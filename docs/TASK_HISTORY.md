@@ -32,16 +32,12 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | 26a | Cards de lacuna (cloze) | Campo `format`, importador, estudo, prompt de cloze |
 | 26b | Modo Pronúncia | Áudio automático, ouvir devagar, mostrar palavra, preferência por baralho |
 | 26c | Menu da tela de estudo | Ícones em todos os itens, modo atual visível |
+| 27 | Categorias de baralhos | Campo `category` no `Deck` (nulo = sem categoria), migração, chips de filtro e seções na tela inicial, diálogo de categoria, gerenciar categorias, campo no JSON e na importação, linha de categoria no `FORMAT_BLOCK` para prompts prontos |
 | 28 | Backup e restauração | Tela Backup: exportar tudo, só baralhos e só prompts (com progresso opcional), salvar em arquivo, compartilhar e restaurar com resumo e conflitos |
 | 28b | Correção do compartilhamento | Erro de FileProvider ("Failed to find configured root") corrigido; função única de arquivo temporário em `cache/exports/` |
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).
 
-## Preparada, status a confirmar no código
-
-| # | Tarefa | Escopo |
-|---|---|---|
-| 27 | Categorias de baralhos | Campo `category` no `Deck` (nulo = sem categoria), migração, chips de filtro e seções na tela inicial, diálogo de categoria, gerenciar categorias, campo no JSON e na importação, linha de categoria no `FORMAT_BLOCK` para prompts prontos |
 
 ## Ideias futuras
 
