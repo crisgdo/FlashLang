@@ -41,7 +41,7 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | B1 | Contador de pendentes reativo ao tempo | Ticker periódico (a cada 30s) no `HomeViewModel` com `observeDecksWithCardCount(timeFlow)` via `flatMapLatest` no repositório; pausa automática com `WhileSubscribed(5_000)` e testes unitários determinísticos em `HomeViewModelTest.kt` |
 | B2 | Ciclo de vida e retenção de estado Compose | Adoção de `collectAsStateWithLifecycle()` em todas as telas (`lifecycle-runtime-compose:2.9.4`), `rememberSaveable` (com `TextFieldValue.Saver`) em editores e retenção de diálogos na rotação (`rememberSaveable` com IDs primitivos em `HomeScreen` e `PromptsScreen`) |
 | B3 | Prompt de importação rápida | `buildImportPrompt` com texto opcional e remoção da seção `TEXTO:` quando vazio (eliminando `(não informado)`); campo `sourceText` na `ImportScreen`; testes unitários em `ImportPromptTest.kt` |
-| C1 | Tema de cores próprio e prevenção de clarão | Paleta oficial derivada do ícone (fundo carvão `#121212` e laranja vibrante `#FF8C38`), remoção do `dynamicColor`, papéis M3 completos (com `surfaceContainer*`), `ExtendedColors` (Success/Warning), `values-night/themes.xml` e testes de contraste WCAG em `ThemeContrastTest.kt` |
+| C1a | Identidade visual — Cores, tema XML e contraste | Implementação da paleta Opção A (Índigo e Âmbar), remoção de `dynamicColor`, temas XML claro/escuro para abertura a frio e testes WCAG (`ThemeContrastTest`) |
 
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).
