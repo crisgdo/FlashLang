@@ -22,11 +22,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -47,11 +49,15 @@ fun ManageCardsScreen(
     onAddCard: () -> Unit,
     onEditCard: (Long) -> Unit,
 ) {
-    val deckName by viewModel.deckName.collectAsState()
-    val cards by viewModel.cards.collectAsState()
-    var search by remember { mutableStateOf("") }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var newName by remember(deckName) { mutableStateOf(deckName) }
+    val deckName by viewModel.deckName.collectAsStateWithLifecycle()
+    val cards by viewModel.cards.collectAsStateWithLifecycle()
+    var search by rememberSaveable { mutableStateOf("") }
+    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
+    var newName by rememberSaveable(deckName) { mutableStateOf(deckName) }
+
+    LaunchedEffect(search) {
+        viewModel.updateSearch(search)
+    }
 
     Scaffold(
         topBar = {

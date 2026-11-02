@@ -5,11 +5,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -145,7 +145,7 @@ fun FlashLangNavHost(
             arguments = listOf(navArgument("promptId") { type = NavType.LongType }),
         ) { entry ->
             val promptId = requireNotNull(entry.arguments).getLong("promptId")
-            val prompts by userPromptRepository.observeAll().collectAsState(initial = emptyList())
+            val prompts by userPromptRepository.observeAll().collectAsStateWithLifecycle(initialValue = emptyList())
             val prompt = prompts.firstOrNull { it.id == promptId }
             if (prompt != null) {
                 PromptDetailScreen(
@@ -195,7 +195,7 @@ fun FlashLangNavHost(
         ) { entry ->
             val deckId = requireNotNull(entry.arguments).getLong("deckId")
             val studyViewModel: StudyViewModel = viewModel(factory = StudyViewModel.Factory(repository, deckId))
-            val updatedCardId by entry.savedStateHandle.getStateFlow<Long?>("updatedCardId", null).collectAsState()
+            val updatedCardId by entry.savedStateHandle.getStateFlow<Long?>("updatedCardId", null).collectAsStateWithLifecycle()
             LaunchedEffect(updatedCardId) {
                 updatedCardId?.let {
                     studyViewModel.refreshCard(it)

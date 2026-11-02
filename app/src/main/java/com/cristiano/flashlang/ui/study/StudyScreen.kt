@@ -46,12 +46,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -96,11 +97,11 @@ fun StudyScreen(
     onEditCard: (Long) -> Unit,
     onManageDeck: () -> Unit,
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val currentCard = state.cards.getOrNull(if (state.isAllCardsMode) state.currentIndex else 0)
-    var showCardMenu by remember { mutableStateOf(false) }
-    var showVoiceDialog by remember { mutableStateOf(false) }
-    var showStudyModeDialog by remember { mutableStateOf(false) }
+    var showCardMenu by rememberSaveable { mutableStateOf(false) }
+    var showVoiceDialog by rememberSaveable { mutableStateOf(false) }
+    var showStudyModeDialog by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val deckPreferences = remember(context) {
         val sharedPreferences = context.getSharedPreferences("flashlang_study_preferences", Context.MODE_PRIVATE)
@@ -113,7 +114,7 @@ fun StudyScreen(
     }
     var studyMode by remember(state.deckId) { mutableStateOf(deckPreferences.getMode(state.deckId)) }
     var autoplayEnabled by remember(state.deckId) { mutableStateOf(deckPreferences.isAutoplayEnabled(state.deckId)) }
-    var wordRevealed by remember(state.deckId, currentCard?.id) { mutableStateOf(false) }
+    var wordRevealed by rememberSaveable(state.deckId, currentCard?.id) { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var speechEngineState by remember { mutableStateOf(SpeechEngineState()) }

@@ -27,11 +27,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -48,8 +49,8 @@ fun CardEditorScreen(
     onBack: () -> Unit,
     onSaved: () -> Unit,
 ) {
-    val state by viewModel.state.collectAsState()
-    var showDeleteConfirmation by remember { mutableStateOf(false) }
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var showDeleteConfirmation by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.saved, state.deleted) {
         if (state.saved || state.deleted) onSaved()
     }

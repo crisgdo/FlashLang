@@ -38,6 +38,7 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | A2 | Exportação de esquemas do Room e testes de migração | `exportSchema = true`, geração do `6.json` via KSP e testes unitários das migrações 1 a 6 (`AppDatabaseMigrationTest.kt`) |
 | A3 | Leitura estrita no DeckImporter e restauração de backup | "Leitura estrita primeiro" em `DeckImporter.parse` (reparos de `cleanInput` apenas como fallback) e validação em memória no `BackupService` (`validateAndNormalize`), preservando aspas curvas e entidades HTML |
 | A4 | Higienização de recursos e templates | Limpeza de duplicidade em `file_paths.xml`, remoção de cores mortas em `colors.xml`, alinhamento do tema base em `themes.xml` (`Theme.Material.NoActionBar`) e exclusão de testes de template (`ExampleUnitTest`, `ExampleInstrumentedTest`) |
+| B1 | Contador de pendentes reativo ao tempo | Ticker periódico (a cada 30s) no `HomeViewModel` com `observeDecksWithCardCount(timeFlow)` via `flatMapLatest` no repositório; pausa automática com `WhileSubscribed(5_000)` e testes unitários determinísticos em `HomeViewModelTest.kt` |
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).
 

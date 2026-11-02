@@ -36,12 +36,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -59,13 +60,13 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BackupScreen(viewModel: BackupViewModel, onBack: () -> Unit) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    var includeProgress by remember { mutableStateOf(true) }
-    var showExportActions by remember { mutableStateOf(false) }
-    var confirmReplace by remember { mutableStateOf(false) }
+    var includeProgress by rememberSaveable { mutableStateOf(true) }
+    var showExportActions by rememberSaveable { mutableStateOf(false) }
+    var confirmReplace by rememberSaveable { mutableStateOf(false) }
     var fileJson by remember { mutableStateOf<String?>(null) }
 
     val createDocument = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
