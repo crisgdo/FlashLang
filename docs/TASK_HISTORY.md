@@ -36,6 +36,7 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | 28 | Backup e restauração | Tela Backup: exportar tudo, só baralhos e só prompts (com progresso opcional), salvar em arquivo, compartilhar e restaurar com resumo e conflitos |
 | 28b | Correção do compartilhamento | Erro de FileProvider ("Failed to find configured root") corrigido; função única de arquivo temporário em `cache/exports/` |
 | A2 | Exportação de esquemas do Room e testes de migração | `exportSchema = true`, geração do `6.json` via KSP e testes unitários das migrações 1 a 6 (`AppDatabaseMigrationTest.kt`) |
+| A3 | Leitura estrita no DeckImporter e restauração de backup | "Leitura estrita primeiro" em `DeckImporter.parse` (reparos de `cleanInput` apenas como fallback) e validação em memória no `BackupService` (`validateAndNormalize`), preservando aspas curvas e entidades HTML |
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).
 
