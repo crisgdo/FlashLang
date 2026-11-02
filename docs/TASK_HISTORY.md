@@ -42,6 +42,8 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | B2 | Ciclo de vida e retenção de estado Compose | Adoção de `collectAsStateWithLifecycle()` em todas as telas (`lifecycle-runtime-compose:2.9.4`), `rememberSaveable` (com `TextFieldValue.Saver`) em editores e retenção de diálogos na rotação (`rememberSaveable` com IDs primitivos em `HomeScreen` e `PromptsScreen`) |
 | B3 | Prompt de importação rápida | `buildImportPrompt` com texto opcional e remoção da seção `TEXTO:` quando vazio (eliminando `(não informado)`); campo `sourceText` na `ImportScreen`; testes unitários em `ImportPromptTest.kt` |
 | C1a | Identidade visual — Cores, tema XML e contraste | Implementação da paleta Opção A (Índigo e Âmbar), remoção de `dynamicColor`, temas XML claro/escuro para abertura a frio e testes WCAG (`ThemeContrastTest`) |
+| C1b | Escala tipográfica completa Material 3 | Configuração dos 15 papéis tipográficos em `Type.kt` (Display, Headline, Title, Body, Label) com `FontFamily.Default`, otimizados para termos de vocabulário, transcrições IPA e frases cloze |
+| C1c | Escala de formas e espaçamentos | Criação de `Shape.kt` (cantos de 4dp a 28dp) e `Spacing.kt` (tokens de 0dp a 32dp via `MaterialTheme.spacing`), integrados ao `FlashLangTheme` |
 
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).

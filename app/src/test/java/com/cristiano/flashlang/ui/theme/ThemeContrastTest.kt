@@ -77,10 +77,18 @@ class ThemeContrastTest {
     @Test
     fun darkColorScheme_meetsAllWcagContrastRequirements() {
         validateColorSchemeContrasts(DarkColorScheme, "Dark Mode (Option A: Indigo & Amber)")
+        assertMinContrast(DarkExtendedColors.onSuccess, DarkExtendedColors.success, 4.5, "onSuccess vs success", "Dark Mode")
+        assertMinContrast(DarkExtendedColors.onWarning, DarkExtendedColors.warning, 4.5, "onWarning vs warning", "Dark Mode")
+        assertMinContrast(DarkExtendedColors.onSuccessContainer, DarkExtendedColors.successContainer, 4.5, "onSuccessContainer vs successContainer", "Dark Mode")
+        assertMinContrast(DarkExtendedColors.onWarningContainer, DarkExtendedColors.warningContainer, 4.5, "onWarningContainer vs warningContainer", "Dark Mode")
     }
 
     @Test
     fun lightColorScheme_meetsAllWcagContrastRequirements() {
         validateColorSchemeContrasts(LightColorScheme, "Light Mode (Option A: Indigo & Amber)")
+        assertMinContrast(LightExtendedColors.onSuccess, LightExtendedColors.success, 3.0, "onSuccess vs success", "Light Mode")
+        assertMinContrast(LightExtendedColors.onWarning, LightExtendedColors.warning, 3.0, "onWarning vs warning", "Light Mode")
+        assertMinContrast(LightExtendedColors.onSuccessContainer, LightExtendedColors.successContainer, 4.5, "onSuccessContainer vs successContainer", "Light Mode")
+        assertMinContrast(LightExtendedColors.onWarningContainer, LightExtendedColors.warningContainer, 4.5, "onWarningContainer vs warningContainer", "Light Mode")
     }
 }

@@ -14,16 +14,24 @@ import androidx.compose.ui.graphics.Color
 data class ExtendedColors(
     val success: Color,
     val onSuccess: Color,
+    val successContainer: Color,
+    val onSuccessContainer: Color,
     val warning: Color,
     val onWarning: Color,
+    val warningContainer: Color,
+    val onWarningContainer: Color,
 )
 
 val LocalExtendedColors = staticCompositionLocalOf {
     ExtendedColors(
         success = Color.Unspecified,
         onSuccess = Color.Unspecified,
+        successContainer = Color.Unspecified,
+        onSuccessContainer = Color.Unspecified,
         warning = Color.Unspecified,
         onWarning = Color.Unspecified,
+        warningContainer = Color.Unspecified,
+        onWarningContainer = Color.Unspecified,
     )
 }
 
@@ -34,15 +42,23 @@ val MaterialTheme.extendedColors: ExtendedColors
 val DarkExtendedColors = ExtendedColors(
     success = SuccessDark,
     onSuccess = OnSuccessDark,
+    successContainer = SuccessContainerDark,
+    onSuccessContainer = OnSuccessContainerDark,
     warning = WarningDark,
     onWarning = OnWarningDark,
+    warningContainer = WarningContainerDark,
+    onWarningContainer = OnWarningContainerDark,
 )
 
 val LightExtendedColors = ExtendedColors(
     success = SuccessLight,
     onSuccess = OnSuccessLight,
+    successContainer = SuccessContainerLight,
+    onSuccessContainer = OnSuccessContainerLight,
     warning = WarningLight,
     onWarning = OnWarningLight,
+    warningContainer = WarningContainerLight,
+    onWarningContainer = OnWarningContainerLight,
 )
 
 val DarkColorScheme = darkColorScheme(

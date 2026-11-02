@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,31 +19,38 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -55,6 +63,8 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -81,10 +91,14 @@ import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.SlowMotionVideo
+import androidx.compose.material.icons.outlined.FormatQuote
+import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.importer.ClozeText
 import com.cristiano.flashlang.data.scheduler.ReviewRating
+import com.cristiano.flashlang.ui.theme.extendedColors
+import com.cristiano.flashlang.ui.theme.spacing
 import com.cristiano.flashlang.BuildConfig
 import java.util.Locale
 import kotlinx.coroutines.launch
@@ -188,6 +202,10 @@ fun StudyScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Voltar") }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                ),
                 actions = {
                     if (state.deckId > 0) {
                         IconButton(onClick = { showCardMenu = true }) {
@@ -284,17 +302,56 @@ fun StudyScreen(
             }
         } else {
             val card = if (state.isAllCardsMode) state.cards[state.currentIndex] else state.cards.first()
-            val progress = if (state.isAllCardsMode) {
+            val currentNumber = if (state.isAllCardsMode) {
                 state.currentIndex + 1
             } else {
                 (state.sessionTotal - state.cards.size + 1).coerceAtMost(state.sessionTotal)
             }
+            val totalNumber = if (state.isAllCardsMode) state.cards.size else state.sessionTotal
+            val progressFraction = if (totalNumber > 0) (currentNumber.toFloat() / totalNumber.toFloat()).coerceIn(0f, 1f) else 0f
+            val progressPercent = (progressFraction * 100).toInt()
+
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 16.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Text("$progress / ${if (state.isAllCardsMode) state.cards.size else state.sessionTotal}", style = MaterialTheme.typography.titleMedium)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "$currentNumber de $totalNumber cartões",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = "$progressPercent%",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = { progressFraction },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        strokeCap = StrokeCap.Round,
+                    )
+                }
+
                 StudyCard(
                     card = card,
                     isFlipped = state.isFlipped,
@@ -304,8 +361,12 @@ fun StudyScreen(
                     onSpeak = { text -> speak(text) },
                     onSpeakSlow = { text -> speak(text, pronunciationSlowRate(speechEngineState.speechRate)) },
                     onRevealWord = { wordRevealed = true },
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
                 )
+
                 if (state.isAllCardsMode) {
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
@@ -324,18 +385,12 @@ fun StudyScreen(
                             Text("Próximo", maxLines = 1, softWrap = false)
                         }
                     }
-                } else if (state.isFlipped) {
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        maxItemsInEachRow = 2,
-                    ) {
-                        RatingButton("Errei", ReviewRating.AGAIN, viewModel, state.isSaving)
-                        RatingButton("Difícil", ReviewRating.HARD, viewModel, state.isSaving)
-                        RatingButton("Bom", ReviewRating.GOOD, viewModel, state.isSaving)
-                        RatingButton("Fácil", ReviewRating.EASY, viewModel, state.isSaving)
-                    }
+                } else {
+                    StudyRatingBar(
+                        card = card,
+                        enabled = state.isFlipped && !state.isSaving,
+                        onRate = viewModel::rateCurrentCard,
+                    )
                 }
             }
         }
@@ -443,19 +498,6 @@ private fun VoiceSettingsDialog(
 }
 
 @Composable
-private fun RatingButton(
-    label: String,
-    rating: ReviewRating,
-    viewModel: StudyViewModel,
-    isSaving: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    Button(onClick = { viewModel.rateCurrentCard(rating) }, enabled = !isSaving, modifier = modifier) {
-        Text(label, maxLines = 1, softWrap = false)
-    }
-}
-
-@Composable
 @OptIn(ExperimentalLayoutApi::class)
 private fun StudyCard(
     card: FlashCard,
@@ -469,157 +511,549 @@ private fun StudyCard(
     modifier: Modifier = Modifier,
 ) {
     val rotation by animateFloatAsState(if (isFlipped) 180f else 0f, label = "cardFlip")
-    Card(
-        modifier = modifier.graphicsLayer { rotationY = rotation }.clickable(onClick = onClick),
+
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.TopCenter,
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+        // Camada 2 (fundo distante):
+        Surface(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(horizontal = 24.dp)
+                .offset(y = (-12).dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.45f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)),
+        ) {}
+
+        // Camada 1 (fundo intermediário):
+        Surface(
+            modifier = Modifier
+                .matchParentSize()
+                .padding(horizontal = 12.dp)
+                .offset(y = (-6).dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        ) {}
+
+        // Cartão Principal:
+        Card(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { rotationY = rotation }
+                .clickable(onClick = onClick),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
-            if (card.format == "cloze") {
-                val fullExample = ClozeText.fillFirstGap(card.example, card.term)
-                if (rotation < 90f) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                if (card.format == "cloze") {
+                    val fullExample = ClozeText.fillFirstGap(card.example, card.term)
+                    if (rotation < 90f) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            ) {
+                                Text(
+                                    "Lacuna",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                        Column(
+                            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                clozeAnnotatedText(
+                                    card.example,
+                                    "___",
+                                    MaterialTheme.colorScheme.primary,
+                                    highlightedFontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                                ),
+                                style = MaterialTheme.typography.bodyLarge,
+                                textAlign = TextAlign.Center,
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            ) {
+                                Text(
+                                    card.exampleTranslation,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                        Text(
+                            "Toque para virar",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .graphicsLayer { rotationY = 180f },
+                            verticalArrangement = Arrangement.spacedBy(14.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.extendedColors.successContainer,
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.extendedColors.onSuccessContainer,
+                                            modifier = Modifier.size(16.dp),
+                                        )
+                                        Text(
+                                            "Resposta revelada",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.extendedColors.onSuccessContainer,
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    shape = CircleShape,
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                    onClick = { onSpeak(fullExample) },
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Outlined.VolumeUp,
+                                        contentDescription = "Ouvir frase completa",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(8.dp).size(20.dp),
+                                    )
+                                }
+                            }
+
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(
+                                    clozeAnnotatedText(
+                                        fullExample,
+                                        card.term,
+                                        MaterialTheme.colorScheme.primary,
+                                        startOverride = card.example.indexOf("___").takeIf { it >= 0 },
+                                    ),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    textAlign = TextAlign.Center,
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.extendedColors.successContainer.copy(alpha = 0.6f),
+                                ) {
+                                    Text(
+                                        card.termTranslation,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.extendedColors.onSuccessContainer,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
+
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                            )
+
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.FormatQuote,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Text(
+                                        "Tradução",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                                Text(
+                                    card.exampleTranslation,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+
+                            card.note?.takeIf(String::isNotBlank)?.let { note ->
+                                Text(
+                                    note,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+
+                            card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Headphones,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Text("Pronúncia", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                    ) {
+                                        Text(
+                                            ipa,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (rotation < 90f && pronunciationMode) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ) {
+                            Text(
+                                "Ouvir primeiro",
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(vertical = 12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        if (wordRevealed) {
+                            Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                        }
+                        FilledTonalButton(onClick = { onSpeak(card.term) }) {
+                            Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir termo", modifier = Modifier.size(48.dp))
+                        }
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(onClick = { onSpeak(card.term) }) {
+                                Icon(Icons.Outlined.Replay, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Ouvir de novo", maxLines = 1, softWrap = false)
+                            }
+                            TextButton(onClick = { onSpeakSlow(card.term) }) {
+                                Icon(Icons.Outlined.SlowMotionVideo, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Ouvir devagar", maxLines = 1, softWrap = false)
+                            }
+                        }
+                        if (!wordRevealed) {
+                            TextButton(onClick = onRevealWord) {
+                                Icon(Icons.Outlined.Visibility, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Mostrar palavra")
+                            }
+                        }
+                    }
                     Text(
-                        clozeAnnotatedText(
-                            card.example,
-                            "___",
-                            MaterialTheme.colorScheme.primary,
-                            highlightedFontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                        ),
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        card.exampleTranslation,
-                        style = MaterialTheme.typography.bodyMedium,
+                        "Repita em voz alta e toque no card para conferir",
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
                     )
-                    Text("Toque para virar", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
+                } else if (rotation < 90f) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        ) {
+                            Text(
+                                if (card.type == "word") "Palavra" else "Expressão",
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            )
+                        }
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                            onClick = { onSpeak(card.term) },
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Outlined.VolumeUp,
+                                contentDescription = "Ouvir",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(8.dp).size(20.dp),
+                            )
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(vertical = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            card.term,
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                    Text(
+                        "Toque no cartão para conferir",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
                 } else {
                     Column(
-                        modifier = Modifier.graphicsLayer { rotationY = 180f },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer { rotationY = 180f },
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.extendedColors.successContainer,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.extendedColors.onSuccessContainer,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        "Resposta revelada",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.extendedColors.onSuccessContainer,
+                                    )
+                                }
+                            }
+                            val audioTarget = if (card.example.isNotBlank()) card.example else card.term
+                            val audioDesc = if (card.example.isNotBlank()) "Ouvir frase de exemplo" else "Ouvir"
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                onClick = { onSpeak(audioTarget) },
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Outlined.VolumeUp,
+                                    contentDescription = audioDesc,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(8.dp).size(20.dp),
+                                )
+                            }
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSpeak(card.term) }
+                                .padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
                             Text(
-                                clozeAnnotatedText(
-                                    fullExample,
-                                    card.term,
-                                    MaterialTheme.colorScheme.primary,
-                                    startOverride = card.example.indexOf("___").takeIf { it >= 0 },
-                                ),
-                                style = MaterialTheme.typography.headlineSmall,
+                                card.term,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.weight(1f),
                             )
-                            IconButton(
-                                onClick = { onSpeak(fullExample) },
-                                modifier = Modifier.semantics { contentDescription = "Ouvir frase completa" },
-                            ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.extendedColors.successContainer.copy(alpha = 0.6f),
+                            ) {
+                                Text(
+                                    card.termTranslation,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.extendedColors.onSuccessContainer,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                                )
+                            }
                         }
-                        Text(card.termTranslation, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-                        card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
-                            Text(ipa, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                        )
+
+                        if (card.example.isNotBlank()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSpeak(card.example) }
+                                    .padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.FormatQuote,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        "Exemplo",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                    )
+                                    Spacer(Modifier.weight(1f))
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                        onClick = { onSpeak(card.example) },
+                                    ) {
+                                        Icon(
+                                            Icons.AutoMirrored.Outlined.VolumeUp,
+                                            contentDescription = "Ouvir frase de exemplo",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.padding(6.dp).size(18.dp),
+                                        )
+                                    }
+                                }
+                                Text(
+                                    card.example,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                if (card.exampleTranslation.isNotBlank()) {
+                                    Text(
+                                        card.exampleTranslation,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
                         }
+
                         card.note?.takeIf(String::isNotBlank)?.let { note ->
-                            Text(note, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
+                            Text(
+                                note,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            )
+                        }
+
+                        card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onSpeak(card.term) }
+                                    .padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    Icon(
+                                        Icons.Outlined.Headphones,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        "Pronúncia",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                ) {
+                                    Text(
+                                        ipa,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-            } else if (rotation < 90f && pronunciationMode) {
-                if (wordRevealed) {
-                    Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                }
-                FilledTonalButton(onClick = { onSpeak(card.term) }) {
-                    Icon(Icons.Outlined.VolumeUp, contentDescription = "Ouvir termo", modifier = Modifier.size(48.dp))
-                }
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    TextButton(onClick = { onSpeak(card.term) }) {
-                        Icon(Icons.Outlined.Replay, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Ouvir de novo", maxLines = 1, softWrap = false)
-                    }
-                    TextButton(onClick = { onSpeakSlow(card.term) }) {
-                        Icon(Icons.Outlined.SlowMotionVideo, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Ouvir devagar", maxLines = 1, softWrap = false)
-                    }
-                }
-                if (!wordRevealed) {
-                    TextButton(onClick = onRevealWord) {
-                        Icon(Icons.Outlined.Visibility, contentDescription = null)
-                        Spacer(Modifier.width(4.dp))
-                        Text("Mostrar palavra")
-                    }
-                }
-                Text("Repita em voz alta e toque no card para conferir", style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-            } else if (rotation < 90f) {
-                Text(if (card.type == "word") "Palavra" else "Expressão", style = MaterialTheme.typography.labelLarge)
-                IconButton(
-                    onClick = { onSpeak(card.term) },
-                    modifier = Modifier.semantics { contentDescription = "Ouvir ${card.term}" },
-                ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
-                Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                Text("Toque para virar", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 16.dp))
-            } else if (pronunciationMode) {
-                Column(
-                    modifier = Modifier.graphicsLayer { rotationY = 180f },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Text(card.term, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
-                        Text(ipa, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                    }
-                    card.note?.takeIf(String::isNotBlank)?.let { note ->
-                        Text(note, style = MaterialTheme.typography.bodySmall, textAlign = TextAlign.Center)
-                    }
-                    Text(card.termTranslation, style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(card.example, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                        IconButton(
-                            onClick = { onSpeak(card.example) },
-                            modifier = Modifier.semantics { contentDescription = "Ouvir frase de exemplo" },
-                        ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
-                    }
-                    Text(card.exampleTranslation, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                }
-            } else {
-                Column(
-                    modifier = Modifier.graphicsLayer { rotationY = 180f },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                ) {
-                    Text(card.termTranslation, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
-                    card.ipa?.takeIf(String::isNotBlank)?.let { ipa ->
-                        Text(
-                            ipa,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    card.note?.takeIf(String::isNotBlank)?.let { note ->
-                        Text(
-                            note,
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(card.example, style = MaterialTheme.typography.bodyLarge, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                        IconButton(
-                            onClick = { onSpeak(card.example) },
-                            modifier = Modifier.semantics { contentDescription = "Ouvir frase de exemplo" },
-                        ) { Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir pronúncia") }
-                    }
-                    Text(card.exampleTranslation, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                 }
             }
         }
