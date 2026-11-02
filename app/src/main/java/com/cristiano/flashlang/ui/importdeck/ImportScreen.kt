@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
@@ -62,6 +63,7 @@ fun ImportScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var selectedLanguage by rememberSaveable { mutableStateOf("inglês") }
+    var sourceText by rememberSaveable { mutableStateOf("") }
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -111,9 +113,18 @@ fun ImportScreen(
                     Text("Espanhol", maxLines = 1, softWrap = false)
                 }
             }
+            OutlinedTextField(
+                value = sourceText,
+                onValueChange = { sourceText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Texto para o prompt (opcional)") },
+                placeholder = { Text("Cole aqui o texto que você leu") },
+                minLines = 3,
+                maxLines = 6,
+            )
             TextButton(
                 onClick = {
-                    clipboardManager.setText(AnnotatedString(buildImportPrompt(selectedLanguage)))
+                    clipboardManager.setText(AnnotatedString(buildImportPrompt(selectedLanguage, sourceText)))
                     coroutineScope.launch { snackbarHostState.showSnackbar("Prompt copiado!") }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -125,6 +136,7 @@ fun ImportScreen(
             TextButton(onClick = onMorePrompts, modifier = Modifier.fillMaxWidth()) {
                 Text("Mais prompts")
             }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
             Text("Cole abaixo o JSON do baralho.", style = MaterialTheme.typography.bodyLarge)
             OutlinedTextField(
                 value = state.categoryName,
