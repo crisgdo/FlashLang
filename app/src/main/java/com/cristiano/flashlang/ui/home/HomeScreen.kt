@@ -30,11 +30,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,19 +71,19 @@ fun HomeScreen(
     onManageClick: (Long) -> Unit,
     onExportClick: (Long) -> Unit,
 ) {
-    val decks by viewModel.decks.collectAsState()
-    val categories by viewModel.categories.collectAsState()
-    var deckToDelete by remember { mutableStateOf<DeckListItem?>(null) }
-    var deckToCategorize by remember { mutableStateOf<DeckListItem?>(null) }
-    var showCategoryManager by remember { mutableStateOf(false) }
-    var categoryToRename by remember { mutableStateOf<String?>(null) }
-    var categoryToDelete by remember { mutableStateOf<String?>(null) }
+    val decks by viewModel.decks.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    var deckIdToDelete by rememberSaveable { mutableStateOf<Long?>(null) }
+    var deckIdToCategorize by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showCategoryManager by rememberSaveable { mutableStateOf(false) }
+    var categoryToRename by rememberSaveable { mutableStateOf<String?>(null) }
+    var categoryToDelete by rememberSaveable { mutableStateOf<String?>(null) }
     var topMenuExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val filterPreferences = remember(context) {
         context.getSharedPreferences("flashlang_home_preferences", android.content.Context.MODE_PRIVATE)
     }
-    var selectedFilter by remember {
+    var selectedFilter by rememberSaveable {
         mutableStateOf(filterPreferences.getString("deck_category_filter", "__all__") ?: "__all__")
     }
     val categoryNames = categories.mapNotNull { it.category?.trim()?.takeIf(String::isNotEmpty) }
@@ -213,11 +214,11 @@ fun HomeScreen(
                                 items(section.decks, key = { "deck-${it.deck.id}" }) { item ->
                                     HomeDeckRow(
                                         item,
-                                        onDelete = { deckToDelete = item },
+                                        onDelete = { deckIdToDelete = item.deck.id },
                                         onClick = { onDeckClick(item.deck.id) },
                                         onExport = { onExportClick(item.deck.id) },
                                         onManage = { onManageClick(item.deck.id) },
-                                        onCategory = { deckToCategorize = item },
+                                        onCategory = { deckIdToCategorize = item.deck.id },
                                     )
                                 }
                             }
@@ -225,11 +226,11 @@ fun HomeScreen(
                             items(filteredDecks.sortedBy { it.deck.name.lowercase(Locale.ROOT) }, key = { "deck-${it.deck.id}" }) { item ->
                                 HomeDeckRow(
                                     item,
-                                    onDelete = { deckToDelete = item },
+                                    onDelete = { deckIdToDelete = item.deck.id },
                                     onClick = { onDeckClick(item.deck.id) },
                                     onExport = { onExportClick(item.deck.id) },
                                     onManage = { onManageClick(item.deck.id) },
-                                    onCategory = { deckToCategorize = item },
+                                    onCategory = { deckIdToCategorize = item.deck.id },
                                 )
                             }
                         }
@@ -239,25 +240,32 @@ fun HomeScreen(
         }
     }
 
-    deckToDelete?.let { item ->
-        AlertDialog(
-            onDismissRequest = { deckToDelete = null },
-            title = { Text("Excluir baralho?") },
-            text = { Text("O baralho ${item.deck.name} e seus cards serão excluídos.") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.deleteDeck(item.deck.id); deckToDelete = null }) { Text("Excluir") }
-            },
-            dismissButton = { TextButton(onClick = { deckToDelete = null }) { Text("Cancelar") } },
-        )
+    deckIdToDelete?.let { deckId ->
+        val item = decks.firstOrNull { it.deck.id == deckId }
+        if (item != null) {
+            AlertDialog(
+                onDismissRequest = { deckIdToDelete = null },
+                title = { Text("Excluir baralho?") },
+                text = { Text("O baralho ${item.deck.name} e seus cards serão excluídos.") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.deleteDeck(item.deck.id); deckIdToDelete = null }) { Text("Excluir") }
+                },
+                dismissButton = { TextButton(onClick = { deckIdToDelete = null }) { Text("Cancelar") } },
+            )
+        }
     }
 
-    deckToCategorize?.let { item ->
-        DeckCategoryDialog(
-            currentCategory = item.deck.category,
-            categories = categoryNames,
-            onDismiss = { deckToCategorize = null },
-            onSave = { category -> viewModel.setDeckCategory(item.deck.id, category); deckToCategorize = null },
-        )
+    deckIdToCategorize?.let { deckId ->
+        val item = decks.firstOrNull { it.deck.id == deckId }
+        if (item != null) {
+            DeckCategoryDialog(
+                deckId = item.deck.id,
+                currentCategory = item.deck.category,
+                categories = categoryNames,
+                onDismiss = { deckIdToCategorize = null },
+                onSave = { category -> viewModel.setDeckCategory(item.deck.id, category); deckIdToCategorize = null },
+            )
+        }
     }
 
     if (showCategoryManager) {
@@ -311,13 +319,14 @@ private data class DeckCategorySection(val category: String, val decks: List<Dec
 
 @Composable
 private fun DeckCategoryDialog(
+    deckId: Long,
     currentCategory: String?,
     categories: List<String>,
     onDismiss: () -> Unit,
     onSave: (String?) -> Unit,
 ) {
-    var selectedCategory by remember(currentCategory) { mutableStateOf(currentCategory) }
-    var newCategory by remember { mutableStateOf("") }
+    var selectedCategory by rememberSaveable(deckId) { mutableStateOf(currentCategory) }
+    var newCategory by rememberSaveable(deckId) { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Categoria do baralho") },
@@ -393,7 +402,7 @@ private fun CategoryManagerDialog(
 
 @Composable
 private fun RenameCategoryDialog(currentName: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var newName by remember(currentName) { mutableStateOf(currentName) }
+    var newName by rememberSaveable(currentName) { mutableStateOf(currentName) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Renomear categoria") },

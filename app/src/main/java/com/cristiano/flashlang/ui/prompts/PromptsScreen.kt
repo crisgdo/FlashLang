@@ -45,12 +45,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -79,8 +80,8 @@ fun PromptsScreen(
     onCreateUserPrompt: () -> Unit,
     onEditUserPrompt: (Long) -> Unit,
 ) {
-    val userPrompts by viewModel.prompts.collectAsState()
-    var promptToDelete by remember { mutableStateOf<UserPrompt?>(null) }
+    val userPrompts by viewModel.prompts.collectAsStateWithLifecycle()
+    var promptIdToDelete by rememberSaveable { mutableStateOf<Long?>(null) }
     val categories = remember { PromptTemplates.all.groupBy { it.category } }
     Scaffold(
         floatingActionButton = {
@@ -118,7 +119,7 @@ fun PromptsScreen(
                         onOpen = { onOpenUserPrompt(prompt.id) },
                         onEdit = { onEditUserPrompt(prompt.id) },
                         onDuplicate = { viewModel.duplicate(prompt) },
-                        onDelete = { promptToDelete = prompt },
+                        onDelete = { promptIdToDelete = prompt.id },
                     )
                 }
             }
@@ -140,16 +141,19 @@ fun PromptsScreen(
         }
     }
 
-    promptToDelete?.let { prompt ->
-        AlertDialog(
-            onDismissRequest = { promptToDelete = null },
-            title = { Text("Excluir prompt?") },
-            text = { Text("O prompt \"${prompt.title}\" será excluído.") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.delete(prompt.id); promptToDelete = null }) { Text("Excluir") }
-            },
-            dismissButton = { TextButton(onClick = { promptToDelete = null }) { Text("Cancelar") } },
-        )
+    promptIdToDelete?.let { promptId ->
+        val prompt = userPrompts.firstOrNull { it.id == promptId }
+        if (prompt != null) {
+            AlertDialog(
+                onDismissRequest = { promptIdToDelete = null },
+                title = { Text("Excluir prompt?") },
+                text = { Text("O prompt \"${prompt.title}\" será excluído.") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.delete(prompt.id); promptIdToDelete = null }) { Text("Excluir") }
+                },
+                dismissButton = { TextButton(onClick = { promptIdToDelete = null }) { Text("Cancelar") } },
+            )
+        }
     }
 }
 
@@ -236,11 +240,11 @@ fun PromptDetailScreen(
     onBack: () -> Unit,
     onImport: () -> Unit,
 ) {
-    var language by remember(template.id) { mutableStateOf("en") }
-    var text by remember(template.id) { mutableStateOf("") }
-    var list by remember(template.id) { mutableStateOf("") }
-    var focus by remember(template.id) { mutableStateOf("") }
-    var previewExpanded by remember(template.id) { mutableStateOf(false) }
+    var language by rememberSaveable(template.id) { mutableStateOf("en") }
+    var text by rememberSaveable(template.id) { mutableStateOf("") }
+    var list by rememberSaveable(template.id) { mutableStateOf("") }
+    var focus by rememberSaveable(template.id) { mutableStateOf("") }
+    var previewExpanded by rememberSaveable(template.id) { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -347,14 +351,14 @@ fun UserPromptEditorScreen(
     onBack: () -> Unit,
     onSave: suspend (title: String, description: String, body: String, generatesDeck: Boolean) -> Unit,
 ) {
-    var title by remember(prompt?.id) { mutableStateOf(prompt?.title.orEmpty()) }
-    var description by remember(prompt?.id) { mutableStateOf(prompt?.description.orEmpty()) }
-    var body by remember(prompt?.id) {
+    var title by rememberSaveable(prompt?.id) { mutableStateOf(prompt?.title.orEmpty()) }
+    var description by rememberSaveable(prompt?.id) { mutableStateOf(prompt?.description.orEmpty()) }
+    var body by rememberSaveable(prompt?.id, stateSaver = TextFieldValue.Saver) {
         mutableStateOf(TextFieldValue(prompt?.body.orEmpty(), selection = TextRange(prompt?.body.orEmpty().length)))
     }
-    var generatesDeck by remember(prompt?.id) { mutableStateOf(prompt?.generatesDeck ?: true) }
+    var generatesDeck by rememberSaveable(prompt?.id) { mutableStateOf(prompt?.generatesDeck ?: true) }
     var isSaving by remember(prompt?.id) { mutableStateOf(false) }
-    var errorMessage by remember(prompt?.id) { mutableStateOf<String?>(null) }
+    var errorMessage by rememberSaveable(prompt?.id) { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     fun insertMarker(marker: String) {
