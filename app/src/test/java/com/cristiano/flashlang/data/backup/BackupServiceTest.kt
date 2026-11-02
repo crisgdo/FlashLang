@@ -136,6 +136,57 @@ class BackupServiceTest {
         assertEquals(beforePrompts, target.getPrompts())
     }
 
+    @Test
+    fun exportAndRestore_preservesCurvedQuotesAndHtmlEntitiesInCardsAndPrompts() = runBlocking {
+        val store = FakeBackupDataStore().apply {
+            insertDeckWithCards(
+                Deck(name = "Expressões “Típicas”", language = "en", category = "Gírias &amp; Cia"),
+                listOf(
+                    Card(
+                        deckId = 0,
+                        term = "“hang out”",
+                        type = "expression",
+                        termTranslation = "‘sair para curtir’",
+                        example = "Let's “hang out” at Tom &amp; Jerry's.",
+                        exampleTranslation = "Vamos ‘curtir’ no Tom &amp; Jerry.",
+                        ipa = "/hæŋ aʊt/",
+                        note = "Usa-se com `with` &lt;amigos&gt;",
+                        format = "basic",
+                    ),
+                ),
+            )
+            insertPrompt(
+                UserPrompt(
+                    title = "Prompt “Especial”",
+                    description = "Notas &amp; regras",
+                    body = "Gere cards com aspas “aqui” e entidades &lt;html&gt;.",
+                ),
+            )
+        }
+
+        val export = BackupService(store, clock = fixedClock).createExport(BackupScope.ALL, includeProgress = true)
+        val target = FakeBackupDataStore()
+        val service = BackupService(target, clock = fixedClock)
+        val preview = service.prepareRestore(export.json)
+        service.restore(preview, RestoreConflictChoice.KEEP_BOTH)
+
+        val restoredDeck = target.getDecks().single()
+        assertEquals("Expressões “Típicas”", restoredDeck.name)
+        assertEquals("Gírias &amp; Cia", restoredDeck.category)
+
+        val restoredCard = target.getCards(restoredDeck.id).single()
+        assertEquals("“hang out”", restoredCard.term)
+        assertEquals("‘sair para curtir’", restoredCard.termTranslation)
+        assertEquals("Let's “hang out” at Tom &amp; Jerry's.", restoredCard.example)
+        assertEquals("Vamos ‘curtir’ no Tom &amp; Jerry.", restoredCard.exampleTranslation)
+        assertEquals("Usa-se com `with` &lt;amigos&gt;", restoredCard.note)
+
+        val restoredPrompt = target.getPrompts().single()
+        assertEquals("Prompt “Especial”", restoredPrompt.title)
+        assertEquals("Notas &amp; regras", restoredPrompt.description)
+        assertEquals("Gere cards com aspas “aqui” e entidades &lt;html&gt;.", restoredPrompt.body)
+    }
+
     private suspend fun populatedStore(): FakeBackupDataStore = FakeBackupDataStore().apply {
         insertDeckWithCards(
             Deck(name = "Travel", language = "en", category = "Pronúncia"),

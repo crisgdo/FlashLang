@@ -1,10 +1,9 @@
 package com.cristiano.flashlang.data.backup
 
 import androidx.room.withTransaction
-import com.cristiano.flashlang.data.exporter.ExportCardJson
-import com.cristiano.flashlang.data.exporter.ExportDeckJson
 import com.cristiano.flashlang.data.importer.DeckImportResult
 import com.cristiano.flashlang.data.importer.DeckImporter
+import com.cristiano.flashlang.data.importer.ImportCardJson
 import com.cristiano.flashlang.data.importer.ImportDeckJson
 import com.cristiano.flashlang.data.local.AppDatabase
 import com.cristiano.flashlang.data.model.Card
@@ -221,15 +220,24 @@ class BackupService(
             if (hasMetadata && backup.app != "FlashLang") throw BackupException("Este arquivo não é um backup do FlashLang.")
             if (hasMetadata && backup.backupVersion != 1) throw BackupException("Versão de backup não compatível: ${backup.backupVersion}.")
             val decks = backup.decks.map { backupDeck ->
-                val legacy = ExportDeckJson(
+                val importDeck = ImportDeckJson(
                     deckName = backupDeck.deckName,
                     language = backupDeck.language,
                     category = backupDeck.category,
                     cards = backupDeck.cards.map { card ->
-                        ExportCardJson(card.term, card.type, card.termTranslation, card.example, card.exampleTranslation, card.ipa, card.note, card.format)
+                        ImportCardJson(
+                            term = card.term,
+                            type = card.type,
+                            termTranslation = card.termTranslation,
+                            example = card.example,
+                            exampleTranslation = card.exampleTranslation,
+                            ipa = card.ipa,
+                            note = card.note,
+                            format = card.format,
+                        )
                     },
                 )
-                val deckResult = importer.parse(json.encodeToString(legacy))
+                val deckResult = importer.validateAndNormalize(importDeck)
                 val imported = (deckResult as? DeckImportResult.Success)?.deck
                     ?: throw BackupException((deckResult as? DeckImportResult.Error)?.message ?: "Baralho inválido no backup.")
                 RestoreDeckPlan(imported, backupDeck.cards.map { it.progress })

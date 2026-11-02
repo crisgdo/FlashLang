@@ -18,15 +18,24 @@ class DeckImporter(
     },
 ) {
     fun parse(input: String): DeckImportResult {
-        val cleanedInput = cleanInput(input)
+        val trimmed = input.trim()
         val parsed = try {
-            json.decodeFromString<ImportDeckJson>(cleanedInput)
-        } catch (exception: SerializationException) {
-            return DeckImportResult.Error(invalidJsonMessage(cleanedInput, exception))
-        } catch (exception: IllegalArgumentException) {
-            return DeckImportResult.Error(invalidJsonMessage(cleanedInput, exception))
+            json.decodeFromString<ImportDeckJson>(trimmed)
+        } catch (_: Exception) {
+            val cleanedInput = cleanInput(input)
+            try {
+                json.decodeFromString<ImportDeckJson>(cleanedInput)
+            } catch (exception: SerializationException) {
+                return DeckImportResult.Error(invalidJsonMessage(cleanedInput, exception))
+            } catch (exception: IllegalArgumentException) {
+                return DeckImportResult.Error(invalidJsonMessage(cleanedInput, exception))
+            }
         }
 
+        return validateAndNormalize(parsed)
+    }
+
+    fun validateAndNormalize(parsed: ImportDeckJson): DeckImportResult {
         val deck = parsed.copy(
             deckName = parsed.deckName.trim(),
             language = normalizeLanguage(parsed.language),

@@ -218,6 +218,82 @@ class DeckImporterTest {
         assertEquals("basic", omittedFormat.deck.cards.single().format)
     }
 
+    @Test
+    fun strictParse_preservesCurvedQuotesInsideValidJsonStrings() {
+        val jsonWithCurvedQuotes = """{
+          "deckName": "Citações “famosas”",
+          "language": "en",
+          "cards": [{
+            "term": "“ticket”",
+            "type": "word",
+            "termTranslation": "‘bilhete’",
+            "example": "He said: “I need a ticket”.",
+            "exampleTranslation": "Ele disse: ‘Preciso de um bilhete’."
+          }]
+        }"""
+        val result = importer.parse(jsonWithCurvedQuotes)
+        assertTrue(result.toString(), result is DeckImportResult.Success)
+        val deck = (result as DeckImportResult.Success).deck
+        assertEquals("Citações “famosas”", deck.deckName)
+        val card = deck.cards.single()
+        assertEquals("“ticket”", card.term)
+        assertEquals("‘bilhete’", card.termTranslation)
+        assertEquals("He said: “I need a ticket”.", card.example)
+        assertEquals("Ele disse: ‘Preciso de um bilhete’.", card.exampleTranslation)
+    }
+
+    @Test
+    fun strictParse_preservesLiteralHtmlEntitiesAndSpecialChars() {
+        val jsonWithEntities = """{
+          "deckName": "Music",
+          "language": "en",
+          "cards": [{
+            "term": "Rock &amp; Roll",
+            "type": "expression",
+            "termTranslation": "Rock &amp; Roll",
+            "example": "We love Rock &amp; Roll.",
+            "exampleTranslation": "Nós amamos Rock &amp; Roll.",
+            "note": "Use `code` &lt;tags&gt;"
+          }]
+        }"""
+        val result = importer.parse(jsonWithEntities)
+        assertTrue(result.toString(), result is DeckImportResult.Success)
+        val card = (result as DeckImportResult.Success).deck.cards.single()
+        assertEquals("Rock &amp; Roll", card.term)
+        assertEquals("Rock &amp; Roll", card.termTranslation)
+        assertEquals("We love Rock &amp; Roll.", card.example)
+        assertEquals("Use `code` &lt;tags&gt;", card.note)
+    }
+
+    @Test
+    fun validateAndNormalize_normalizesDirectModelWithoutModifyingText() {
+        val model = ImportDeckJson(
+            deckName = "  Quotes  ",
+            language = "ENGLISH",
+            category = "  Test  ",
+            cards = listOf(
+                ImportCardJson(
+                    term = "“custom”",
+                    type = "palavra",
+                    termTranslation = "‘personalizado’",
+                    example = "This is “custom”.",
+                    exampleTranslation = "Isto é ‘personalizado’.",
+                    format = "basic",
+                ),
+            ),
+        )
+        val result = importer.validateAndNormalize(model)
+        assertTrue(result is DeckImportResult.Success)
+        val deck = (result as DeckImportResult.Success).deck
+        assertEquals("Quotes", deck.deckName)
+        assertEquals("en", deck.language)
+        assertEquals("Test", deck.category)
+        val card = deck.cards.single()
+        assertEquals("“custom”", card.term)
+        assertEquals("‘personalizado’", card.termTranslation)
+        assertEquals("word", card.type)
+    }
+
     private companion object {
         const val validJson = """{
           "deckName": "Travel",
