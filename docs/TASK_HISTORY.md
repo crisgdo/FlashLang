@@ -39,11 +39,10 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | A3 | Leitura estrita no DeckImporter e restauração de backup | "Leitura estrita primeiro" em `DeckImporter.parse` (reparos de `cleanInput` apenas como fallback) e validação em memória no `BackupService` (`validateAndNormalize`), preservando aspas curvas e entidades HTML |
 | A4 | Higienização de recursos e templates | Limpeza de duplicidade em `file_paths.xml`, remoção de cores mortas em `colors.xml`, alinhamento do tema base em `themes.xml` (`Theme.Material.NoActionBar`) e exclusão de testes de template (`ExampleUnitTest`, `ExampleInstrumentedTest`) |
 | B1 | Contador de pendentes reativo ao tempo | Ticker periódico (a cada 30s) no `HomeViewModel` com `observeDecksWithCardCount(timeFlow)` via `flatMapLatest` no repositório; pausa automática com `WhileSubscribed(5_000)` e testes unitários determinísticos em `HomeViewModelTest.kt` |
-| B2 | Ciclo de vida e retenção de estado Compose | Adoção de `collectAsStateWithLifecycle()` em todas as telas (`lifecycle-runtime-compose:2.9.4`) e `rememberSaveable` (com `TextFieldValue.Saver`) em editores e diálogos para preservar texto em rotações de tela |
+| B2 | Ciclo de vida e retenção de estado Compose | Adoção de `collectAsStateWithLifecycle()` em todas as telas (`lifecycle-runtime-compose:2.9.4`), `rememberSaveable` (com `TextFieldValue.Saver`) em editores e retenção de diálogos na rotação (`rememberSaveable` com IDs primitivos em `HomeScreen` e `PromptsScreen`) |
+| B3 | Prompt de importação rápida | `buildImportPrompt` com texto opcional e remoção da seção `TEXTO:` quando vazio (eliminando `(não informado)`); campo `sourceText` na `ImportScreen`; testes unitários em `ImportPromptTest.kt` |
+| C1 | Tema de cores próprio e prevenção de clarão | Paleta oficial derivada do ícone (fundo carvão `#121212` e laranja vibrante `#FF8C38`), remoção do `dynamicColor`, papéis M3 completos (com `surfaceContainer*`), `ExtendedColors` (Success/Warning), `values-night/themes.xml` e testes de contraste WCAG em `ThemeContrastTest.kt` |
 
-- **Achado 5 (Correção de Diálogos na Rotação):**
-  - Substituição de `remember` por `rememberSaveable` nos controladores de diálogos em `HomeScreen` (`deckIdToCategorize`, `deckIdToDelete`, `showCategoryManager`, `categoryToRename`, `categoryToDelete`) e `PromptsScreen` (`promptIdToDelete`).
-  - Vinculação de `deckId` como chave em `rememberSaveable(deckId)` no `DeckCategoryDialog`, retendo o texto digitado em nova categoria e a opção selecionada após recreação de Activity.
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).
 
