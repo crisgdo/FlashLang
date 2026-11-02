@@ -48,6 +48,7 @@ App Android pessoal de flashcards para inglês e espanhol. O usuário gera baral
 - Campos `ipa`, `note` e `format` são sempre opcionais. Baralhos antigos continuam válidos.
 - Importar um baralho com nome já existente pergunta: Substituir, Manter os dois (sufixo) ou Cancelar.
 - A exportação de um baralho usa o mesmo formato de importação e **não** inclui o progresso de estudo.
+- **Leitura estrita primeiro (robustness principle):** O `DeckImporter.parse` tenta primeiro o parse estrito do JSON sem modificar o texto de entrada. O reparo agressivo (`cleanInput` — remoção de cercas markdown, espaços invisíveis e normalização de aspas) só é aplicado como fallback se o parse estrito falhar. Isso preserva aspas curvas internas (`“...”`, `‘...’`) e entidades literais. A restauração no `BackupService` usa `validateAndNormalize` diretamente em instâncias em memória, sem re-serializar strings para o importador.
 
 ## 5b. Backup e compartilhamento de arquivos
 

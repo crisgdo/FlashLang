@@ -5,7 +5,9 @@ import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.DeckListItem
 import com.cristiano.flashlang.data.model.DeckCategoryCount
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
 
 class DeckRepository(private val deckDao: DeckDao) {
     suspend fun insertDeck(deck: Deck, cards: List<Card> = emptyList()): Long {
@@ -26,6 +28,10 @@ class DeckRepository(private val deckDao: DeckDao) {
 
     fun observeDecksWithCardCount(now: Long = System.currentTimeMillis()): Flow<List<DeckListItem>> =
         deckDao.observeDecksWithCardCount(now)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeDecksWithCardCount(timeFlow: Flow<Long>): Flow<List<DeckListItem>> =
+        timeFlow.flatMapLatest { now -> deckDao.observeDecksWithCardCount(now) }
 
     suspend fun getDecks(): List<Deck> = deckDao.getDecks()
 

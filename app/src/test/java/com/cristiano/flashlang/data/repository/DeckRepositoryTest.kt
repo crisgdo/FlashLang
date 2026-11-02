@@ -8,6 +8,7 @@ import com.cristiano.flashlang.data.model.DeckListItem
 import com.cristiano.flashlang.data.model.DeckCategoryCount
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -125,6 +126,39 @@ class DeckRepositoryTest {
         assertTrue(repository.getDecks().all { it.category == null })
         assertEquals(2, repository.getDecks().size)
         assertTrue(repository.getDecks().any { it.id == firstId })
+    }
+
+    @Test
+    fun observeDecksWithCardCount_withTimeFlow_updatesPendingCountWhenTimeAdvances() = runBlocking {
+        val dao = FakeDeckDao()
+        val repository = DeckRepository(dao)
+        val deckId = repository.insertDeck(Deck(name = "English", language = "en"))
+
+        dao.insertCards(
+            listOf(
+                Card(
+                    id = 1,
+                    deckId = deckId,
+                    term = "cat",
+                    type = "word",
+                    termTranslation = "gato",
+                    example = "A cat",
+                    exampleTranslation = "Um gato",
+                    dueAt = 1000L,
+                ),
+            ),
+        )
+
+        val timeFlow = MutableStateFlow(500L)
+        val flow = repository.observeDecksWithCardCount(timeFlow)
+
+        val initialEmission = flow.first()
+        assertEquals(1, initialEmission.single().cardCount)
+        assertEquals(0, initialEmission.single().pendingCount)
+
+        timeFlow.value = 1500L
+        val updatedEmission = flow.first { it.single().pendingCount == 1 }
+        assertEquals(1, updatedEmission.single().pendingCount)
     }
 
     private class FakeDeckDao : DeckDao {
