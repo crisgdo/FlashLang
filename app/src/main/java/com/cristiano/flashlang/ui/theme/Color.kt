@@ -2,93 +2,93 @@ package com.cristiano.flashlang.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Modo Escuro (Dark Mode) - Identidade derivada do ícone oficial
-val CharcoalDark = Color(0xFF121212)
-val SurfaceDark = Color(0xFF1E1E1E)
-val PrimaryDark = Color(0xFFFF8C38) // Laranja vibrante do ícone
-val OnPrimaryDark = Color(0xFF4E2600)
-val PrimaryContainerDark = Color(0xFF5C2D00)
-val OnPrimaryContainerDark = Color(0xFFFFDCC5)
+// Modo Escuro (Dark Mode) - Opção A: Índigo e Âmbar
+val BackgroundDark = Color(0xFF12161F) // Azul-carvão escuro e profundo
+val SurfaceDark = Color(0xFF1A1F2B) // Superfície azul-noite
+val PrimaryDark = Color(0xFF7C8CE4) // Índigo vibrante
+val OnPrimaryDark = Color(0xFF111827) // Grafite escuro
+val PrimaryContainerDark = Color(0xFF2B3754) // Índigo profundo
+val OnPrimaryContainerDark = Color(0xFFD8E0FF) // Índigo muito claro
 
-val SecondaryDark = Color(0xFF99CCFF)
-val OnSecondaryDark = Color(0xFF003366)
-val SecondaryContainerDark = Color(0xFF00497D)
-val OnSecondaryContainerDark = Color(0xFFD1E4FF)
+val SecondaryDark = Color(0xFF9FB0EE) // Índigo suave
+val OnSecondaryDark = Color(0xFF0A1B4B) // Azul marinho profundo
+val SecondaryContainerDark = Color(0xFF233266) // Azul noite
+val OnSecondaryContainerDark = Color(0xFFDCE3FF) // Azul gelo
 
-val TertiaryDark = Color(0xFFFFB074)
-val OnTertiaryDark = Color(0xFF502400)
-val TertiaryContainerDark = Color(0xFF6F3800)
-val OnTertiaryContainerDark = Color(0xFFFFDBC9)
+val TertiaryDark = Color(0xFFF59E0B) // Âmbar de destaque
+val OnTertiaryDark = Color(0xFF452B00) // Marrom escuro
+val TertiaryContainerDark = Color(0xFF633F00) // Âmbar queimado
+val OnTertiaryContainerDark = Color(0xFFFFDDB3) // Pêssego claro
 
-val ErrorDark = Color(0xFFCF6679)
-val OnErrorDark = Color(0xFF37000B)
-val ErrorContainerDark = Color(0xFF601410)
-val OnErrorContainerDark = Color(0xFFF9DEDC)
+val ErrorDark = Color(0xFFEF4444) // Vermelho alerta
+val OnErrorDark = Color(0xFF111827) // Grafite escuro (contraste >= 4.5:1)
+val ErrorContainerDark = Color(0xFF93000A) // Borgonha profundo
+val OnErrorContainerDark = Color(0xFFFFDAD6) // Rosa pálido
 
-val OnSurfaceDark = Color(0xFFEDE0DD)
-val SurfaceVariantDark = Color(0xFF2A2A2A)
-val OnSurfaceVariantDark = Color(0xFFC4C7C5)
-val OutlineDark = Color(0xFF8E918F)
-val OutlineVariantDark = Color(0xFF484848)
+val OnSurfaceDark = Color(0xFFE2E8F0) // Cinza ardósia claro
+val SurfaceVariantDark = Color(0xFF283145) // Superfície intermediária
+val OnSurfaceVariantDark = Color(0xFFC4CADA) // Texto secundário suave
+val OutlineDark = Color(0xFF8D96A8) // Bordas e divisores
+val OutlineVariantDark = Color(0xFF404B62) // Bordas sutis
 
-val SurfaceContainerLowestDark = Color(0xFF0D0D0D)
-val SurfaceContainerLowDark = Color(0xFF181818)
-val SurfaceContainerDark = Color(0xFF222222)
-val SurfaceContainerHighDark = Color(0xFF2C2C2C)
-val SurfaceContainerHighestDark = Color(0xFF373737)
+val SurfaceContainerLowestDark = Color(0xFF0D1017)
+val SurfaceContainerLowDark = Color(0xFF151A24)
+val SurfaceContainerDark = Color(0xFF1E2533)
+val SurfaceContainerHighDark = Color(0xFF283145)
+val SurfaceContainerHighestDark = Color(0xFF333E57)
 
-val InverseSurfaceDark = Color(0xFFEDE0DD)
-val InverseOnSurfaceDark = Color(0xFF1E1E1E)
-val InversePrimaryDark = Color(0xFFC34D00)
+val InverseSurfaceDark = Color(0xFFE2E8F0)
+val InverseOnSurfaceDark = Color(0xFF1A1F2B)
+val InversePrimaryDark = Color(0xFF4F5ED8)
 val ScrimDark = Color(0xFF000000)
 
-// Modo Claro (Light Mode)
-val BackgroundLight = Color(0xFFF8F9FA)
-val SurfaceLight = Color(0xFFFFFFFF)
-val PrimaryLight = Color(0xFFC34D00) // Calibrado para contraste estrito >= 4.5:1 com OnPrimary (#FFFFFF)
-val OnPrimaryLight = Color(0xFFFFFFFF)
-val PrimaryContainerLight = Color(0xFFFFDCC5)
-val OnPrimaryContainerLight = Color(0xFF351000)
+// Modo Claro (Light Mode) - Opção A: Índigo e Âmbar
+val BackgroundLight = Color(0xFFF4F6FB) // Azul-gelo pálido
+val SurfaceLight = Color(0xFFFFFFFF) // Branco puro
+val PrimaryLight = Color(0xFF4F5ED8) // Índigo estrutural
+val OnPrimaryLight = Color(0xFFFFFFFF) // Branco puro
+val PrimaryContainerLight = Color(0xFFE0E7FF) // Índigo pastel
+val OnPrimaryContainerLight = Color(0xFF1E2756) // Índigo escuro
 
-val SecondaryLight = Color(0xFF005FB8)
-val OnSecondaryLight = Color(0xFFFFFFFF)
-val SecondaryContainerLight = Color(0xFFD1E4FF)
-val OnSecondaryContainerLight = Color(0xFF001D36)
+val SecondaryLight = Color(0xFF3B4CCA) // Azul cobalto
+val OnSecondaryLight = Color(0xFFFFFFFF) // Branco
+val SecondaryContainerLight = Color(0xFFDEE1FF) // Azul suave
+val OnSecondaryContainerLight = Color(0xFF00105C) // Azul noite
 
-val TertiaryLight = Color(0xFFB45309)
-val OnTertiaryLight = Color(0xFFFFFFFF)
-val TertiaryContainerLight = Color(0xFFFFDBC9)
-val OnTertiaryContainerLight = Color(0xFF2C1200)
+val TertiaryLight = Color(0xFFD97706) // Âmbar escuro
+val OnTertiaryLight = Color(0xFFFFFFFF) // Branco
+val TertiaryContainerLight = Color(0xFFFFDDB3) // Âmbar pastel
+val OnTertiaryContainerLight = Color(0xFF2A1800) // Marrom escuro
 
-val ErrorLight = Color(0xFFBA1A1A)
-val OnErrorLight = Color(0xFFFFFFFF)
-val ErrorContainerLight = Color(0xFFFFEDEA)
-val OnErrorContainerLight = Color(0xFF410002)
+val ErrorLight = Color(0xFFDC2626) // Vermelho
+val OnErrorLight = Color(0xFFFFFFFF) // Branco
+val ErrorContainerLight = Color(0xFFFFDAD6) // Rosa pastel
+val OnErrorContainerLight = Color(0xFF410002) // Vinho escuro
 
-val OnSurfaceLight = Color(0xFF1A1C1E)
-val SurfaceVariantLight = Color(0xFFE7E0D8)
-val OnSurfaceVariantLight = Color(0xFF43474E)
-val OutlineLight = Color(0xFF73777F)
-val OutlineVariantLight = Color(0xFFC3C7CF)
+val OnSurfaceLight = Color(0xFF0F172A) // Ardósia profunda
+val SurfaceVariantLight = Color(0xFFE2E8F0) // Cinza azulado
+val OnSurfaceVariantLight = Color(0xFF475569) // Texto secundário
+val OutlineLight = Color(0xFF64748B) // Bordas e divisores
+val OutlineVariantLight = Color(0xFFCBD5E1) // Linhas suaves
 
 val SurfaceContainerLowestLight = Color(0xFFFFFFFF)
-val SurfaceContainerLowLight = Color(0xFFF3F4F6)
-val SurfaceContainerLight = Color(0xFFECEEF1)
-val SurfaceContainerHighLight = Color(0xFFE2E5E9)
-val SurfaceContainerHighestLight = Color(0xFFD7DBE2)
+val SurfaceContainerLowLight = Color(0xFFEEF2F7)
+val SurfaceContainerLight = Color(0xFFE5EBF5)
+val SurfaceContainerHighLight = Color(0xFFDCE3F0)
+val SurfaceContainerHighestLight = Color(0xFFD3DBEB)
 
-val InverseSurfaceLight = Color(0xFF2E3133)
-val InverseOnSurfaceLight = Color(0xFFF0F1F3)
-val InversePrimaryLight = Color(0xFFFF8C38)
+val InverseSurfaceLight = Color(0xFF1E293B)
+val InverseOnSurfaceLight = Color(0xFFF1F5F9)
+val InversePrimaryLight = Color(0xFF7C8CE4)
 val ScrimLight = Color(0xFF000000)
 
-// Extended Colors (Tokens semânticos adicionais)
-val SuccessDark = Color(0xFF2E7D32)
+// Extended Colors (Tokens semânticos de sucesso e aviso)
+val SuccessDark = Color(0xFF10B981)
 val OnSuccessDark = Color(0xFFFFFFFF)
-val WarningDark = Color(0xFFF57C00)
-val OnWarningDark = Color(0xFFFFFFFF)
+val WarningDark = Color(0xFFF59E0B)
+val OnWarningDark = Color(0xFF111827)
 
-val SuccessLight = Color(0xFF4CAF50)
+val SuccessLight = Color(0xFF059669)
 val OnSuccessLight = Color(0xFFFFFFFF)
-val WarningLight = Color(0xFFFF9800)
+val WarningLight = Color(0xFFD97706)
 val OnWarningLight = Color(0xFFFFFFFF)

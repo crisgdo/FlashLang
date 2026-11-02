@@ -76,12 +76,11 @@ class ThemeContrastTest {
 
     @Test
     fun darkColorScheme_meetsAllWcagContrastRequirements() {
-        validateColorSchemeContrasts(DarkColorScheme, "Dark Mode")
+        validateColorSchemeContrasts(DarkColorScheme, "Dark Mode (Option A: Indigo & Amber)")
     }
 
     @Test
     fun lightColorScheme_meetsAllWcagContrastRequirements() {
-        validateColorSchemeContrasts(LightColorScheme, "Light Mode")
+        validateColorSchemeContrasts(LightColorScheme, "Light Mode (Option A: Indigo & Amber)")
     }
 }
-
