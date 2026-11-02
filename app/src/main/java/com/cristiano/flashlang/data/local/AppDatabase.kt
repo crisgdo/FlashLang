@@ -8,7 +8,7 @@ import com.cristiano.flashlang.data.model.Card
 import com.cristiano.flashlang.data.model.Deck
 import com.cristiano.flashlang.data.model.UserPrompt
 
-@Database(entities = [Deck::class, Card::class, UserPrompt::class], version = 6, exportSchema = false)
+@Database(entities = [Deck::class, Card::class, UserPrompt::class], version = 6, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun deckDao(): DeckDao
     abstract fun userPromptDao(): UserPromptDao
