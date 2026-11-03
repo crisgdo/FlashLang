@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,9 +69,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -125,30 +130,56 @@ fun HomeScreen(
     val filterPreferences = remember(context) {
         context.getSharedPreferences("flashlang_home_preferences", android.content.Context.MODE_PRIVATE)
     }
-    var selectedFilter by rememberSaveable {
-        mutableStateOf(filterPreferences.getString("deck_category_filter", "__all__") ?: "__all__")
-    }
 
     val categoryNames = categories.mapNotNull { it.category?.trim()?.takeIf(String::isNotEmpty) }
         .distinctBy { it.lowercase(Locale.ROOT) }
         .sortedBy { it.lowercase(Locale.ROOT) }
     val hasUncategorized = categories.any { it.category.isNullOrBlank() }
-    val selectedCategory = selectedFilter.removePrefix("category:")
-    val filterExists = selectedFilter == "__all__" ||
-        (selectedFilter == "__none__" && hasUncategorized) ||
-        categoryNames.any { it.equals(selectedCategory, ignoreCase = true) }
 
-    LaunchedEffect(filterExists, selectedFilter) {
-        if (decks.isNotEmpty() && !filterExists) {
-            selectedFilter = "__all__"
-            filterPreferences.edit().putString("deck_category_filter", "__all__").apply()
+    val categoryTabs = remember(categoryNames, hasUncategorized) {
+        buildList {
+            add(CategoryTab.All)
+            categoryNames.forEach { name ->
+                add(CategoryTab.Named(name))
+            }
+            if (hasUncategorized) {
+                add(CategoryTab.Uncategorized)
+            }
         }
     }
 
-    val filteredDecks = when (selectedFilter) {
-        "__all__" -> decks
-        "__none__" -> decks.filter { it.deck.category.isNullOrBlank() }
-        else -> decks.filter { it.deck.category?.trim()?.equals(selectedCategory, ignoreCase = true) == true }
+    val coroutineScope = rememberCoroutineScope()
+    val chipListState = rememberLazyListState()
+
+    val initialTabKey = remember {
+        filterPreferences.getString("deck_category_filter", "__all__") ?: "__all__"
+    }
+    val initialPageIndex = remember(categoryTabs) {
+        categoryTabs.indexOfFirst { it.key == initialTabKey }.coerceAtLeast(0)
+    }
+    val pagerState = rememberPagerState(
+        initialPage = initialPageIndex,
+        pageCount = { categoryTabs.size },
+    )
+
+    var hasRestoredSavedPage by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(categoryTabs) {
+        if (!hasRestoredSavedPage && categoryTabs.size > 1) {
+            val targetIndex = categoryTabs.indexOfFirst { it.key == initialTabKey }
+            if (targetIndex > 0 && targetIndex < categoryTabs.size) {
+                pagerState.scrollToPage(targetIndex)
+            }
+            hasRestoredSavedPage = true
+        }
+    }
+
+    LaunchedEffect(pagerState.currentPage, categoryTabs) {
+        if (categoryTabs.isNotEmpty()) {
+            val safeIndex = pagerState.currentPage.coerceIn(0, categoryTabs.lastIndex)
+            val tab = categoryTabs[safeIndex]
+            filterPreferences.edit().putString("deck_category_filter", tab.key).apply()
+            chipListState.animateScrollToItem(safeIndex)
+        }
     }
 
     val sections = decks.groupBy {
@@ -282,100 +313,107 @@ fun HomeScreen(
                 )
             }
         } else {
-            val totalPending = filteredDecks.sumOf { it.pendingCount }
-            val activeDecksCount = filteredDecks.count { it.cardCount > 0 }
-
-            LazyColumn(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
-                contentPadding = PaddingValues(bottom = 96.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                // Chips de Filtro
-                item {
-                    LazyRow(
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        item {
-                            CategoryFilterChip(
-                                label = "Todas",
-                                isSelected = selectedFilter == "__all__",
-                                onClick = {
-                                    selectedFilter = "__all__"
-                                    filterPreferences.edit().putString("deck_category_filter", "__all__").apply()
-                                },
-                            )
-                        }
-                        items(categoryNames, key = { "category-${it.lowercase(Locale.ROOT)}" }) { category ->
-                            val key = "category:${category.lowercase(Locale.ROOT)}"
-                            CategoryFilterChip(
-                                label = category,
-                                isSelected = selectedFilter == key,
-                                onClick = {
-                                    selectedFilter = key
-                                    filterPreferences.edit().putString("deck_category_filter", key).apply()
-                                },
-                            )
-                        }
-                        if (hasUncategorized) {
-                            item {
-                                CategoryFilterChip(
-                                    label = "Sem categoria",
-                                    isSelected = selectedFilter == "__none__",
-                                    onClick = {
-                                        selectedFilter = "__none__"
-                                        filterPreferences.edit().putString("deck_category_filter", "__none__").apply()
-                                    },
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Hero Banner
-                item {
-                    HeroBanner(
-                        totalPending = totalPending,
-                        totalDecks = activeDecksCount,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
-                }
-
-                if (filteredDecks.isEmpty()) {
-                    item {
-                        Text(
-                            text = "Nenhum baralho nesta categoria.",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                // Chips de Filtro fixos no topo
+                LazyRow(
+                    state = chipListState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(categoryTabs.size, key = { categoryTabs[it].key }) { index ->
+                        val tab = categoryTabs[index]
+                        CategoryFilterChip(
+                            label = tab.label,
+                            isSelected = pagerState.currentPage == index,
+                            onClick = {
+                                coroutineScope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            },
                         )
                     }
-                } else if (selectedFilter == "__all__") {
-                    sections.forEach { section ->
-                        val isCollapsed = collapsedSections.contains(section.category)
-                        val sectionPending = section.decks.sumOf { it.pendingCount }
+                }
 
-                        item(key = "section-${section.category.lowercase(Locale.ROOT)}") {
-                            SectionHeader(
-                                category = section.category,
-                                deckCount = section.decks.size,
-                                pendingCount = sectionPending,
-                                isCollapsed = isCollapsed,
-                                onToggleCollapse = {
-                                    if (isCollapsed) collapsedSections.remove(section.category)
-                                    else collapsedSections.add(section.category)
-                                },
+                // HorizontalPager para deslizar entre categorias
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize(),
+                ) { page ->
+                    val tab = categoryTabs.getOrNull(page) ?: CategoryTab.All
+                    val pageDecks = when (tab) {
+                        CategoryTab.All -> decks
+                        is CategoryTab.Named -> decks.filter { it.deck.category?.trim()?.equals(tab.name, ignoreCase = true) == true }
+                        CategoryTab.Uncategorized -> decks.filter { it.deck.category.isNullOrBlank() }
+                    }
+                    val totalPending = pageDecks.sumOf { it.pendingCount }
+                    val activeDecksCount = pageDecks.count { it.cardCount > 0 }
+
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(bottom = 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        // Hero Banner
+                        item {
+                            HeroBanner(
+                                totalPending = totalPending,
+                                totalDecks = activeDecksCount,
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                         }
 
-                        if (!isCollapsed) {
-                            items(section.decks, key = { "deck-${it.deck.id}" }) { item ->
+                        if (pageDecks.isEmpty()) {
+                            item {
+                                Text(
+                                    text = "Nenhum baralho nesta categoria.",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        } else if (tab is CategoryTab.All) {
+                            sections.forEach { section ->
+                                val isCollapsed = collapsedSections.contains(section.category)
+                                val sectionPending = section.decks.sumOf { it.pendingCount }
+
+                                item(key = "section-${section.category.lowercase(Locale.ROOT)}") {
+                                    SectionHeader(
+                                        category = section.category,
+                                        deckCount = section.decks.size,
+                                        pendingCount = sectionPending,
+                                        isCollapsed = isCollapsed,
+                                        onToggleCollapse = {
+                                            if (isCollapsed) collapsedSections.remove(section.category)
+                                            else collapsedSections.add(section.category)
+                                        },
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                    )
+                                }
+
+                                if (!isCollapsed) {
+                                    items(section.decks, key = { "deck-${it.deck.id}" }) { item ->
+                                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                            HomeDeckRow(
+                                                item = item,
+                                                onDelete = { deckIdToDelete = item.deck.id },
+                                                onClick = { onDeckClick(item.deck.id) },
+                                                onExport = { onExportClick(item.deck.id) },
+                                                onManage = { onManageClick(item.deck.id) },
+                                                onCategory = { deckIdToCategorize = item.deck.id },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            items(pageDecks.sortedBy { it.deck.name.lowercase(Locale.ROOT) }, key = { "deck-${it.deck.id}" }) { item ->
                                 Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                     HomeDeckRow(
                                         item = item,
@@ -387,19 +425,6 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                        }
-                    }
-                } else {
-                    items(filteredDecks.sortedBy { it.deck.name.lowercase(Locale.ROOT) }, key = { "deck-${it.deck.id}" }) { item ->
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            HomeDeckRow(
-                                item = item,
-                                onDelete = { deckIdToDelete = item.deck.id },
-                                onClick = { onDeckClick(item.deck.id) },
-                                onExport = { onExportClick(item.deck.id) },
-                                onManage = { onManageClick(item.deck.id) },
-                                onCategory = { deckIdToCategorize = item.deck.id },
-                            )
                         }
                     }
                 }
@@ -780,6 +805,26 @@ private fun HomeDeckRow(
                 }
             }
         }
+    }
+}
+
+private sealed interface CategoryTab {
+    val key: String
+    val label: String
+
+    data object All : CategoryTab {
+        override val key = "__all__"
+        override val label = "Todas"
+    }
+
+    data class Named(val name: String) : CategoryTab {
+        override val key = "category:${name.lowercase(Locale.ROOT)}"
+        override val label = name
+    }
+
+    data object Uncategorized : CategoryTab {
+        override val key = "__none__"
+        override val label = "Sem categoria"
     }
 }
 
