@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 
 data class StudyUiState(
     val deckId: Long = 0,
+    val deckName: String = "",
     val cards: List<Card> = emptyList(),
     val allCards: List<Card> = emptyList(),
     val currentIndex: Int = 0,
@@ -36,9 +37,12 @@ class StudyViewModel(private val repository: DeckRepository, private val deckId:
         viewModelScope.launch {
             val allCards = repository.getCards(deckId).shuffled()
             val pendingCards = repository.getDueCards(deckId).shuffled()
-            val language = repository.getDecks().firstOrNull { it.id == deckId }?.language ?: "en"
+            val deck = repository.getDecks().firstOrNull { it.id == deckId }
+            val deckName = deck?.name.orEmpty()
+            val language = deck?.language ?: "en"
             _state.update {
                 it.copy(
+                    deckName = deckName,
                     cards = pendingCards,
                     allCards = allCards,
                     language = language,
