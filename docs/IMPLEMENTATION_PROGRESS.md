@@ -2,7 +2,7 @@
 
 > **Referência Oficial:** `FlashLang_todas_as_telas_v2.html`  
 > **Diretrizes e Regras:** `AGENTS.md` e `docs/DECISIONS.md`  
-> **Status Geral:** Em andamento (Fase 2 de 4 concluída)
+> **Status Geral:** Fase Principal Concluída (Todas as telas base migradas com sucesso)
 
 ---
 
@@ -27,7 +27,7 @@
 | **Grupo 2: Editar card** | `CardEditorScreen.kt` | • Controles segmentados `.seg` em 2 colunas (Formato e Tipo)<br>• Inputs `.input` com cantos de 10dp e labels superiores (12sp `muted`)<br>• Dica contextual para formato Lacuna<br>• Botão Salvar `.btn-primary` (14dp)<br>• Botão Excluir `.btn-danger` com borda avermelhada e confirmação | **Concluído** (C2e) |
 | **Grupo 3: Importação** | `ImportScreen.kt` | • Caixa de texto monoespaçada 13sp (260dp, cantos 10dp)<br>• Grade 2 colunas de botões tonais (Colar e Arquivo)<br>• Card reativo com check verde "JSON válido"<br>• Botão primário largo "Importar baralho" (14dp)<br>• Diálogo de resolução de duplicados | **Concluído** (C2f) |
 | **Backup & Ajustes** | `BackupScreen.kt` | • Hero banner 20dp com contagem de baralhos, cards e prompts<br>• Checkbox de progresso de estudo em container surface<br>• Botões verticais (Exportar tudo, Só baralhos, Só prompts)<br>• Botão tonal Restaurar de arquivo<br>• Modal customizado 24dp "Exportação pronta" | **Concluído** (C2f) |
-| **Grupo 3: Prompts** | `PromptsScreen.kt`<br>`PromptDetailScreen.kt`<br>`UserPromptEditorScreen.kt` | • Seção "Meus prompts" e "Prompts prontos"<br>• Cards com tag de categoria<br>• Bloco de visualização de prompt mono/copiável<br>• Botão de cópia e atalho para importar | *Pendente* |
+| **Grupo 3: Prompts** | `PromptsScreen.kt`<br>`PromptDetailScreen.kt`<br>`UserPromptEditorScreen.kt` | • Seção "Meus prompts" com container tracejado (.drop) e "Prompts prontos"<br>• Cards com cantos de 14dp e menu popup<br>• Seletor de idioma em 2 colunas com cards (.lang)<br>• Bloco monoespaçado (.mono) com prévia e cópia<br>• Marcadores em chips (.tag) e suporte a imePadding() | **Concluído** (C2g) |
 
 ---
 
