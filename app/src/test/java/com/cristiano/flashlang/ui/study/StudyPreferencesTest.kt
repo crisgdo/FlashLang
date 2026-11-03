@@ -20,6 +20,9 @@ class StudyPreferencesTest {
         assertFalse(preferences.isAutoplayEnabled(10))
         assertEquals(StudyMode.STANDARD, preferences.getMode(11))
         assertTrue(preferences.isAutoplayEnabled(11))
+
+        preferences.setMode(11, StudyMode.INVERTED)
+        assertEquals(StudyMode.INVERTED, preferences.getMode(11))
     }
 
     @Test

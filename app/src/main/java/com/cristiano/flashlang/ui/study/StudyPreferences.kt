@@ -2,6 +2,7 @@ package com.cristiano.flashlang.ui.study
 
 enum class StudyMode(val storedValue: String) {
     STANDARD("standard"),
+    INVERTED("inverted"),
     PRONUNCIATION("pronunciation");
 
     companion object {

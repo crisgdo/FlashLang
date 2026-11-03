@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -360,35 +361,14 @@ fun StudyScreen(
     }
 
     if (showStudyModeDialog) {
-        AlertDialog(
-            onDismissRequest = { showStudyModeDialog = false },
-            title = { Text("Modo de estudo") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    StudyMode.entries.forEach { mode ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                studyMode = mode
-                                deckPreferences.setMode(state.deckId, mode)
-                                showStudyModeDialog = false
-                            },
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = studyMode == mode, onClick = {
-                                studyMode = mode
-                                deckPreferences.setMode(state.deckId, mode)
-                                showStudyModeDialog = false
-                            })
-                            Text(
-                                if (mode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
-                                modifier = Modifier.weight(1f),
-                            )
-                            if (studyMode == mode) Icon(Icons.Outlined.Check, contentDescription = "Selecionado")
-                        }
-                    }
-                }
+        StudyModeBottomSheet(
+            currentMode = studyMode,
+            onSelectMode = { mode ->
+                studyMode = mode
+                deckPreferences.setMode(state.deckId, mode)
+                showStudyModeDialog = false
             },
-            confirmButton = { TextButton(onClick = { showStudyModeDialog = false }) { Text("Fechar") } },
+            onDismiss = { showStudyModeDialog = false },
         )
     }
 
@@ -567,7 +547,11 @@ private fun StudyOptionsBottomSheet(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = if (studyMode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
+                        text = when (studyMode) {
+                            StudyMode.STANDARD -> "Padrão"
+                            StudyMode.INVERTED -> "Invertido"
+                            StudyMode.PRONUNCIATION -> "Pronúncia (ouvir primeiro)"
+                        },
                         style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -621,6 +605,135 @@ private fun StudyOptionsBottomSheet(
                     onCheckedChange = if (isPronunciation) onAutoplayChange else null,
                 )
             }
+        }
+    }
+}
+
+private data class StudyModeOption(
+    val mode: StudyMode,
+    val title: String,
+    val description: String,
+)
+
+private val studyModeOptions = listOf(
+    StudyModeOption(
+        mode = StudyMode.STANDARD,
+        title = "Padrão",
+        description = "Termo na frente, tradução e exemplo no verso",
+    ),
+    StudyModeOption(
+        mode = StudyMode.INVERTED,
+        title = "Invertido",
+        description = "Tradução na frente, termo no verso",
+    ),
+    StudyModeOption(
+        mode = StudyMode.PRONUNCIATION,
+        title = "Pronúncia",
+        description = "Ouça, repita em voz alta e confira",
+    ),
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StudyModeBottomSheet(
+    currentMode: StudyMode,
+    onSelectMode: (StudyMode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 14.dp)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(9.dp),
+                    )
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+        ) {
+            Text(
+                text = "Modo de estudo",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
+            )
+
+            studyModeOptions.forEachIndexed { index, option ->
+                val isSelected = currentMode == option.mode
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelectMode(option.mode) }
+                        .padding(vertical = 14.dp, horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    CustomStudyRadioButton(selected = isSelected)
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = option.title,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontSize = 15.sp,
+                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = option.description,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+                if (index < studyModeOptions.size - 1) {
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        thickness = 1.dp,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CustomStudyRadioButton(selected: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .border(
+                width = 2.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
+                    )
+            )
         }
     }
 }
