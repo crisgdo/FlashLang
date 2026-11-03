@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -174,19 +175,68 @@ fun HomeScreen(
                         Icon(
                             Icons.Outlined.MoreVert,
                             contentDescription = "Mais opções",
-                            tint = MaterialTheme.colorScheme.onBackground,
+                            tint = if (topMenuExpanded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                         )
                     }
-                    DropdownMenu(expanded = topMenuExpanded, onDismissRequest = { topMenuExpanded = false }) {
+                    DropdownMenu(
+                        expanded = topMenuExpanded,
+                        onDismissRequest = { topMenuExpanded = false },
+                        modifier = Modifier.width(220.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shadowElevation = 8.dp,
+                        tonalElevation = 0.dp,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("Backup") },
-                            leadingIcon = { Icon(Icons.Outlined.Backup, contentDescription = null) },
-                            onClick = { topMenuExpanded = false; onBackupClick() },
+                            text = {
+                                Text(
+                                    text = "Backup",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Normal,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Backup,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                            onClick = {
+                                topMenuExpanded = false
+                                onBackupClick()
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                         )
                         DropdownMenuItem(
-                            text = { Text("Gerenciar categorias") },
-                            leadingIcon = { Icon(Icons.Outlined.Category, contentDescription = null) },
-                            onClick = { topMenuExpanded = false; showCategoryManager = true },
+                            text = {
+                                Text(
+                                    text = "Gerenciar categorias",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Normal,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Outlined.Category,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            },
+                            onClick = {
+                                topMenuExpanded = false
+                                showCategoryManager = true
+                            },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                         )
                     }
                 }
