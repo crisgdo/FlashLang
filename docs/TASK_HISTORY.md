@@ -44,6 +44,7 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | C1a | Identidade visual — Cores, tema XML e contraste | Implementação da paleta Opção A (Índigo e Âmbar), remoção de `dynamicColor`, temas XML claro/escuro para abertura a frio e testes WCAG (`ThemeContrastTest`) |
 | C1b | Escala tipográfica completa Material 3 | Configuração dos 15 papéis tipográficos em `Type.kt` (Display, Headline, Title, Body, Label) com `FontFamily.Default`, otimizados para termos de vocabulário, transcrições IPA e frases cloze |
 | C1c | Escala de formas e espaçamentos | Criação de `Shape.kt` (cantos de 4dp a 28dp) e `Spacing.kt` (tokens de 0dp a 32dp via `MaterialTheme.spacing`), integrados ao `FlashLangTheme` |
+| C2b | Redesenho visual premium da tela de estudo | Cabeçalho de progresso duplo com LinearProgressIndicator; StudyCard com efeito empilhado (stacked cards), pills e divisores; grade 2x2 de botões com tons container (Errei, Difícil, Bom, Fácil); fundo unificado com a TopAppBar e áudio contextual de exemplo no verso |
 
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).

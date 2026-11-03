@@ -1,64 +1,86 @@
 package com.cristiano.flashlang.ui.home
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.DriveFileRenameOutline
-import androidx.compose.material.icons.outlined.Backup
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cristiano.flashlang.data.model.DeckListItem
+import com.cristiano.flashlang.ui.theme.BadgeAmberBackgroundDark
+import com.cristiano.flashlang.ui.theme.BadgeAmberBackgroundLight
+import com.cristiano.flashlang.ui.theme.BadgeAmberTextDark
+import com.cristiano.flashlang.ui.theme.BadgeAmberTextLight
+import com.cristiano.flashlang.ui.theme.BadgeGreenBackgroundDark
+import com.cristiano.flashlang.ui.theme.BadgeGreenBackgroundLight
+import com.cristiano.flashlang.ui.theme.BadgeGreenTextDark
+import com.cristiano.flashlang.ui.theme.BadgeGreenTextLight
 import java.util.Locale
 
 @Composable
@@ -79,6 +101,12 @@ fun HomeScreen(
     var categoryToRename by rememberSaveable { mutableStateOf<String?>(null) }
     var categoryToDelete by rememberSaveable { mutableStateOf<String?>(null) }
     var topMenuExpanded by remember { mutableStateOf(false) }
+
+    val collapsedSections = rememberSaveable(saver = listSaver(
+        save = { it.toList() },
+        restore = { mutableStateListOf<String>().apply { addAll(it) } }
+    )) { mutableStateListOf<String>() }
+
     val context = LocalContext.current
     val filterPreferences = remember(context) {
         context.getSharedPreferences("flashlang_home_preferences", android.content.Context.MODE_PRIVATE)
@@ -86,6 +114,7 @@ fun HomeScreen(
     var selectedFilter by rememberSaveable {
         mutableStateOf(filterPreferences.getString("deck_category_filter", "__all__") ?: "__all__")
     }
+
     val categoryNames = categories.mapNotNull { it.category?.trim()?.takeIf(String::isNotEmpty) }
         .distinctBy { it.lowercase(Locale.ROOT) }
         .sortedBy { it.lowercase(Locale.ROOT) }
@@ -94,17 +123,20 @@ fun HomeScreen(
     val filterExists = selectedFilter == "__all__" ||
         (selectedFilter == "__none__" && hasUncategorized) ||
         categoryNames.any { it.equals(selectedCategory, ignoreCase = true) }
-    androidx.compose.runtime.LaunchedEffect(filterExists, selectedFilter) {
+
+    LaunchedEffect(filterExists, selectedFilter) {
         if (decks.isNotEmpty() && !filterExists) {
             selectedFilter = "__all__"
             filterPreferences.edit().putString("deck_category_filter", "__all__").apply()
         }
     }
+
     val filteredDecks = when (selectedFilter) {
         "__all__" -> decks
         "__none__" -> decks.filter { it.deck.category.isNullOrBlank() }
         else -> decks.filter { it.deck.category?.trim()?.equals(selectedCategory, ignoreCase = true) == true }
     }
+
     val sections = decks.groupBy {
         it.deck.category?.trim()?.takeIf(String::isNotEmpty)?.lowercase(Locale.ROOT) ?: "__none__"
     }.map { (key, items) ->
@@ -115,20 +147,35 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             Row(
-                modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 20.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "Meus baralhos",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "Meus baralhos",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontSize = 21.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = onPromptsClick) {
-                    Icon(Icons.Outlined.AutoAwesome, contentDescription = "Prompts")
+                    Icon(
+                        Icons.Outlined.AutoAwesome,
+                        contentDescription = "Prompts",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                    )
                 }
                 Box {
                     IconButton(onClick = { topMenuExpanded = true }) {
-                        Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
+                        Icon(
+                            Icons.Outlined.MoreVert,
+                            contentDescription = "Mais opções",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                        )
                     }
                     DropdownMenu(expanded = topMenuExpanded, onDismissRequest = { topMenuExpanded = false }) {
                         DropdownMenuItem(
@@ -146,74 +193,129 @@ fun HomeScreen(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onImportClick) {
-                Icon(Icons.Outlined.Add, contentDescription = "Importar baralho")
-            }
+            ExtendedFloatingActionButton(
+                onClick = onImportClick,
+                shape = RoundedCornerShape(18.dp),
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                text = { Text("Importar", fontWeight = FontWeight.SemiBold, fontSize = 15.sp) },
+            )
         },
     ) { padding ->
         if (decks.isEmpty()) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Text("Nenhum baralho ainda. Importe o primeiro!", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "Nenhum baralho ainda. Importe o primeiro!",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         } else {
-            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    item {
-                        FilterChip(
-                            selected = selectedFilter == "__all__",
-                            onClick = { selectedFilter = "__all__"; filterPreferences.edit().putString("deck_category_filter", "__all__").apply() },
-                            label = { Text("Todas") },
-                        )
-                    }
-                    items(categoryNames, key = { "category-${it.lowercase(Locale.ROOT)}" }) { category ->
-                        val key = "category:${category.lowercase(Locale.ROOT)}"
-                        FilterChip(
-                            selected = selectedFilter == key,
-                            onClick = { selectedFilter = key; filterPreferences.edit().putString("deck_category_filter", key).apply() },
-                            label = { Text(category) },
-                        )
-                    }
-                    if (hasUncategorized) {
+            val totalPending = filteredDecks.sumOf { it.pendingCount }
+            val activeDecksCount = filteredDecks.count { it.cardCount > 0 }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                // Chips de Filtro
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         item {
-                            FilterChip(
-                                selected = selectedFilter == "__none__",
-                                onClick = { selectedFilter = "__none__"; filterPreferences.edit().putString("deck_category_filter", "__none__").apply() },
-                                label = { Text("Sem categoria") },
+                            CategoryFilterChip(
+                                label = "Todas",
+                                isSelected = selectedFilter == "__all__",
+                                onClick = {
+                                    selectedFilter = "__all__"
+                                    filterPreferences.edit().putString("deck_category_filter", "__all__").apply()
+                                },
                             )
+                        }
+                        items(categoryNames, key = { "category-${it.lowercase(Locale.ROOT)}" }) { category ->
+                            val key = "category:${category.lowercase(Locale.ROOT)}"
+                            CategoryFilterChip(
+                                label = category,
+                                isSelected = selectedFilter == key,
+                                onClick = {
+                                    selectedFilter = key
+                                    filterPreferences.edit().putString("deck_category_filter", key).apply()
+                                },
+                            )
+                        }
+                        if (hasUncategorized) {
+                            item {
+                                CategoryFilterChip(
+                                    label = "Sem categoria",
+                                    isSelected = selectedFilter == "__none__",
+                                    onClick = {
+                                        selectedFilter = "__none__"
+                                        filterPreferences.edit().putString("deck_category_filter", "__none__").apply()
+                                    },
+                                )
+                            }
                         }
                     }
                 }
+
+                // Hero Banner
+                item {
+                    HeroBanner(
+                        totalPending = totalPending,
+                        totalDecks = activeDecksCount,
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                    )
+                }
+
                 if (filteredDecks.isEmpty()) {
-                    Text("Nenhum baralho nesta categoria.", modifier = Modifier.fillMaxWidth().padding(24.dp), textAlign = TextAlign.Center)
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        if (selectedFilter == "__all__") {
-                            sections.forEach { section ->
-                                item(key = "section-${section.category.lowercase(Locale.ROOT)}") {
-                                    val pendingCount = section.decks.sumOf { it.pendingCount }
-                                    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 2.dp)) {
-                                        Text(section.category, style = MaterialTheme.typography.titleMedium)
-                                        Text(
-                                            "${section.decks.size} baralhos · $pendingCount para revisar hoje",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                                items(section.decks, key = { "deck-${it.deck.id}" }) { item ->
+                    item {
+                        Text(
+                            text = "Nenhum baralho nesta categoria.",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else if (selectedFilter == "__all__") {
+                    sections.forEach { section ->
+                        val isCollapsed = collapsedSections.contains(section.category)
+                        val sectionPending = section.decks.sumOf { it.pendingCount }
+
+                        item(key = "section-${section.category.lowercase(Locale.ROOT)}") {
+                            SectionHeader(
+                                category = section.category,
+                                deckCount = section.decks.size,
+                                pendingCount = sectionPending,
+                                isCollapsed = isCollapsed,
+                                onToggleCollapse = {
+                                    if (isCollapsed) collapsedSections.remove(section.category)
+                                    else collapsedSections.add(section.category)
+                                },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
+
+                        if (!isCollapsed) {
+                            items(section.decks, key = { "deck-${it.deck.id}" }) { item ->
+                                Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                                     HomeDeckRow(
-                                        item,
+                                        item = item,
                                         onDelete = { deckIdToDelete = item.deck.id },
                                         onClick = { onDeckClick(item.deck.id) },
                                         onExport = { onExportClick(item.deck.id) },
@@ -222,17 +324,19 @@ fun HomeScreen(
                                     )
                                 }
                             }
-                        } else {
-                            items(filteredDecks.sortedBy { it.deck.name.lowercase(Locale.ROOT) }, key = { "deck-${it.deck.id}" }) { item ->
-                                HomeDeckRow(
-                                    item,
-                                    onDelete = { deckIdToDelete = item.deck.id },
-                                    onClick = { onDeckClick(item.deck.id) },
-                                    onExport = { onExportClick(item.deck.id) },
-                                    onManage = { onManageClick(item.deck.id) },
-                                    onCategory = { deckIdToCategorize = item.deck.id },
-                                )
-                            }
+                        }
+                    }
+                } else {
+                    items(filteredDecks.sortedBy { it.deck.name.lowercase(Locale.ROOT) }, key = { "deck-${it.deck.id}" }) { item ->
+                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            HomeDeckRow(
+                                item = item,
+                                onDelete = { deckIdToDelete = item.deck.id },
+                                onClick = { onDeckClick(item.deck.id) },
+                                onExport = { onExportClick(item.deck.id) },
+                                onManage = { onManageClick(item.deck.id) },
+                                onCategory = { deckIdToCategorize = item.deck.id },
+                            )
                         }
                     }
                 }
@@ -248,7 +352,10 @@ fun HomeScreen(
                 title = { Text("Excluir baralho?") },
                 text = { Text("O baralho ${item.deck.name} e seus cards serão excluídos.") },
                 confirmButton = {
-                    TextButton(onClick = { viewModel.deleteDeck(item.deck.id); deckIdToDelete = null }) { Text("Excluir") }
+                    TextButton(onClick = {
+                        viewModel.deleteDeck(deckId)
+                        deckIdToDelete = null
+                    }) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
                 },
                 dismissButton = { TextButton(onClick = { deckIdToDelete = null }) { Text("Cancelar") } },
             )
@@ -259,40 +366,163 @@ fun HomeScreen(
         val item = decks.firstOrNull { it.deck.id == deckId }
         if (item != null) {
             DeckCategoryDialog(
-                deckId = item.deck.id,
+                deckId = deckId,
                 currentCategory = item.deck.category,
                 categories = categoryNames,
                 onDismiss = { deckIdToCategorize = null },
-                onSave = { category -> viewModel.setDeckCategory(item.deck.id, category); deckIdToCategorize = null },
+                onSave = { category ->
+                    viewModel.setDeckCategory(deckId, category)
+                    deckIdToCategorize = null
+                },
             )
         }
     }
 
     if (showCategoryManager) {
         CategoryManagerDialog(
-            categories = categories.filter { !it.category.isNullOrBlank() }.sortedBy { it.category!!.lowercase(Locale.ROOT) },
+            categories = categories,
             onDismiss = { showCategoryManager = false },
-            onRename = { category -> categoryToRename = category },
-            onDelete = { category -> categoryToDelete = category },
+            onRename = { category ->
+                categoryToRename = category
+            },
+            onDelete = { category ->
+                categoryToDelete = category
+            },
         )
     }
 
-    categoryToRename?.let { category ->
+    categoryToRename?.let { currentName ->
         RenameCategoryDialog(
-            currentName = category,
+            currentName = currentName,
             onDismiss = { categoryToRename = null },
-            onSave = { newName -> viewModel.renameCategory(category, newName); categoryToRename = null },
+            onSave = { newName ->
+                viewModel.renameCategory(currentName, newName)
+                categoryToRename = null
+            },
         )
     }
 
-    categoryToDelete?.let { category ->
+    categoryToDelete?.let { categoryName ->
         AlertDialog(
             onDismissRequest = { categoryToDelete = null },
             title = { Text("Excluir categoria?") },
-            text = { Text("Os baralhos da categoria \"$category\" não serão apagados; ficarão sem categoria.") },
-            confirmButton = { TextButton(onClick = { viewModel.removeCategory(category); categoryToDelete = null }) { Text("Excluir") } },
+            text = { Text("Os baralhos da categoria \"$categoryName\" ficarão sem categoria.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.removeCategory(categoryName)
+                    categoryToDelete = null
+                }) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            },
             dismissButton = { TextButton(onClick = { categoryToDelete = null }) { Text("Cancelar") } },
         )
+    }
+}
+
+@Composable
+private fun CategoryFilterChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
+        border = if (isSelected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, fontWeight = FontWeight.Medium),
+            color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp),
+        )
+    }
+}
+
+@Composable
+private fun HeroBanner(
+    totalPending: Int,
+    totalDecks: Int,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Column {
+                Text(
+                    text = "Para revisar hoje",
+                    style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "$totalPending cards",
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 36.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+            Text(
+                text = if (totalPending == 0 && totalDecks > 0) "Tudo em dia!" else "em $totalDecks ${if (totalDecks == 1) "baralho" else "baralhos"}",
+                style = MaterialTheme.typography.labelMedium.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(
+    category: String,
+    deckCount: Int,
+    pendingCount: Int,
+    isCollapsed: Boolean,
+    onToggleCollapse: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggleCollapse)
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = category,
+            style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = "$deckCount ${if (deckCount == 1) "baralho" else "baralhos"} · $pendingCount hoje",
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Icon(
+                imageVector = Icons.Outlined.KeyboardArrowDown,
+                contentDescription = if (isCollapsed) "Expandir $category" else "Recolher $category",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(18.dp)
+                    .rotate(if (isCollapsed) -90f else 0f),
+            )
+        }
     }
 }
 
@@ -305,14 +535,118 @@ private fun HomeDeckRow(
     onManage: () -> Unit,
     onCategory: () -> Unit,
 ) {
-    DeckRow(
-        item = item,
-        onDelete = onDelete,
+    var menuExpanded by remember(item.deck.id) { mutableStateOf(false) }
+    val isDark = isSystemInDarkTheme()
+
+    val amberBg = if (isDark) BadgeAmberBackgroundDark else BadgeAmberBackgroundLight
+    val amberText = if (isDark) BadgeAmberTextDark else BadgeAmberTextLight
+    val greenBg = if (isDark) BadgeGreenBackgroundDark else BadgeGreenBackgroundLight
+    val greenText = if (isDark) BadgeGreenTextDark else BadgeGreenTextLight
+
+    Surface(
         onClick = onClick,
-        onExport = onExport,
-        onManage = onManage,
-        onCategory = onCategory,
-    )
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription = "Estudar ${item.deck.name}"
+                role = Role.Button
+            },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = item.deck.name,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 20.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "${languageName(item.deck.language)} · ${item.cardCount} cards",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+
+            Surface(
+                shape = CircleShape,
+                color = if (item.pendingCount > 0) amberBg else greenBg,
+            ) {
+                Text(
+                    text = if (item.pendingCount > 0) "${item.pendingCount} hoje" else "Em dia",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = if (item.pendingCount > 0) amberText else greenText,
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+
+            Box {
+                IconButton(
+                    onClick = { menuExpanded = true },
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        Icons.Outlined.MoreVert,
+                        contentDescription = "Mais opções",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Gerenciar") },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
+                        onClick = { menuExpanded = false; onManage() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Exportar") },
+                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                        onClick = { menuExpanded = false; onExport() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Categoria") },
+                        leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
+                        onClick = { menuExpanded = false; onCategory() },
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        onClick = { menuExpanded = false; onDelete() },
+                    )
+                }
+            }
+        }
+    }
 }
 
 private data class DeckCategorySection(val category: String, val decks: List<DeckListItem>)
@@ -355,7 +689,9 @@ private fun DeckCategoryDialog(
 @Composable
 private fun CategoryChoice(label: String, selected: Boolean, onSelect: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelect),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RadioButton(selected = selected, onClick = onSelect)
@@ -417,85 +753,6 @@ private fun RenameCategoryDialog(currentName: String, onDismiss: () -> Unit, onS
         confirmButton = { TextButton(onClick = { if (newName.isNotBlank()) onSave(newName) }, enabled = newName.isNotBlank()) { Text("Salvar") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
     )
-}
-
-@Composable
-private fun DeckRow(
-    item: DeckListItem,
-    onDelete: () -> Unit,
-    onClick: () -> Unit,
-    onExport: () -> Unit,
-    onManage: () -> Unit,
-    onCategory: () -> Unit,
-) {
-    var menuExpanded by remember(item.deck.id) { mutableStateOf(false) }
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth().semantics {
-            contentDescription = "Estudar ${item.deck.name}"
-            role = Role.Button
-        },
-    ) {
-        Box(Modifier.fillMaxWidth().padding(16.dp)) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = item.deck.name,
-                    modifier = Modifier.fillMaxWidth().padding(end = 48.dp),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Start,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    "${languageName(item.deck.language)} · ${item.cardCount} cards\n${item.pendingCount} para revisar hoje",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Start,
-                )
-            }
-
-            Box(Modifier.align(Alignment.TopEnd)) {
-                IconButton(onClick = { menuExpanded = true }) {
-                    Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
-                }
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Gerenciar") },
-                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                        onClick = { menuExpanded = false; onManage() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Exportar") },
-                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                        onClick = { menuExpanded = false; onExport() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Categoria") },
-                        leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
-                        onClick = { menuExpanded = false; onCategory() },
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                            )
-                        },
-                        onClick = { menuExpanded = false; onDelete() },
-                    )
-                }
-            }
-        }
-    }
 }
 
 private fun languageName(language: String): String = when (language) {
