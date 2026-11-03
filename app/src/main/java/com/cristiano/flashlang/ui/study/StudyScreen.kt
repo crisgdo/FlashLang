@@ -31,6 +31,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Card
@@ -373,11 +374,10 @@ fun StudyScreen(
     }
 
     if (showVoiceDialog) {
-        VoiceSettingsDialog(
+        VoiceBottomSheet(
             speechState = speechEngineState,
             onSelectVoice = speechController::selectVoice,
             onTestVoice = speechController::testVoice,
-            onSelectRate = speechController::setSpeechRate,
             onOpenAndroidSettings = {
                 context.startActivity(Intent("com.android.settings.TTS_SETTINGS"))
             },
@@ -738,58 +738,167 @@ private fun CustomStudyRadioButton(selected: Boolean) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun VoiceSettingsDialog(
+private fun VoiceBottomSheet(
     speechState: SpeechEngineState,
     onSelectVoice: (Voice) -> Unit,
     onTestVoice: (Voice) -> Unit,
-    onSelectRate: (Float) -> Unit,
     onOpenAndroidSettings: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val speeds = listOf(0.75f, 1f, 1.25f)
-    AlertDialog(
+    var showAllVoices by rememberSaveable { mutableStateOf(false) }
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("Voz") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                if (speechState.voices.isEmpty()) {
-                    Text("Nenhuma voz disponível para este idioma.")
-                } else {
-                    speechState.voices.forEachIndexed { index, voice ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = voice.name == speechState.selectedVoiceName,
-                                onClick = { onSelectVoice(voice) },
-                            )
-                            Column(Modifier.weight(1f)) {
-                                Text(
-                                    "Voz ${index + 1}${if (voice.isNetworkConnectionRequired) " (online)" else ""}",
-                                )
-                                Text(voice.name, style = MaterialTheme.typography.bodySmall)
-                            }
-                            TextButton(onClick = { onTestVoice(voice) }) { Text("Testar") }
-                        }
-                    }
-                }
-                Text("Velocidade", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 12.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 14.dp)
+                    .width(36.dp)
+                    .height(4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(9.dp),
+                    )
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+        ) {
+            Text(
+                text = "Voz",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(start = 4.dp, end = 4.dp, bottom = 10.dp),
+            )
+
+            if (speechState.voices.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp, horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    speeds.forEach { speed ->
-                        TextButton(onClick = { onSelectRate(speed) }) {
-                            Text(if (speechState.speechRate == speed) "✓ ${speed}x" else "${speed}x", maxLines = 1, softWrap = false)
-                        }
+                    Text(
+                        text = "Nenhuma voz disponível para este idioma.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                    TextButton(onClick = onOpenAndroidSettings) {
+                        Text("Configurações de voz do Android")
                     }
                 }
-                TextButton(onClick = onOpenAndroidSettings) {
-                    Text("Configurações de voz do Android")
+            } else {
+                val displayedVoices = if (showAllVoices || speechState.voices.size <= 8) {
+                    speechState.voices
+                } else {
+                    speechState.voices.take(8)
+                }
+                val remainingCount = speechState.voices.size - displayedVoices.size
+
+                displayedVoices.forEachIndexed { index, voice ->
+                    val isSelected = voice.name == speechState.selectedVoiceName
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelectVoice(voice) }
+                            .padding(vertical = 12.dp, horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        CustomStudyRadioButton(selected = isSelected)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Voz ${index + 1}${if (voice.isNetworkConnectionRequired) " (online)" else ""}",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = 15.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = voice.name,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 2.dp),
+                            )
+                        }
+                        Text(
+                            text = "Testar",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .clickable { onTestVoice(voice) }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                        )
+                    }
+                    if (index < displayedVoices.size - 1 || remainingCount > 0) {
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                            thickness = 1.dp,
+                        )
+                    }
+                }
+
+                if (remainingCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showAllVoices = true }
+                            .padding(vertical = 14.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "+ $remainingCount vozes",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            ),
+                        )
+                    }
                 }
             }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
-    )
+
+            Spacer(Modifier.height(12.dp))
+
+            FilledTonalButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            ) {
+                Text(
+                    text = "Fechar",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
+                )
+            }
+        }
+    }
 }
 
 @Composable
