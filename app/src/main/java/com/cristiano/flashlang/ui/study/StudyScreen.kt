@@ -8,6 +8,7 @@ import android.content.Intent
 import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -51,6 +53,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -83,6 +87,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.MoreVert
@@ -223,66 +228,10 @@ fun StudyScreen(
                 actions = {
                     if (state.deckId > 0) {
                         IconButton(onClick = { showCardMenu = true }) {
-                            Icon(Icons.Outlined.MoreVert, contentDescription = "Mais opções")
-                        }
-                        DropdownMenu(expanded = showCardMenu, onDismissRequest = { showCardMenu = false }) {
-                            if (currentCard != null) {
-                                DropdownMenuItem(
-                                    text = { Text("Editar card") },
-                                    leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                                    onClick = { showCardMenu = false; onEditCard(currentCard.id) },
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("Voz") },
-                                    leadingIcon = { Icon(Icons.Outlined.RecordVoiceOver, contentDescription = null) },
-                                    onClick = { showCardMenu = false; showVoiceDialog = true },
-                                )
-                            }
-                            DropdownMenuItem(
-                                text = {
-                                    Column {
-                                        Text("Modo de estudo")
-                                        Text(
-                                            if (studyMode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.School, contentDescription = null) },
-                                onClick = { showCardMenu = false; showStudyModeDialog = true },
-                            )
-                            DropdownMenuItem(
-                                enabled = studyMode == StudyMode.PRONUNCIATION,
-                                text = {
-                                    Column {
-                                        Text("Reproduzir automaticamente")
-                                        if (studyMode == StudyMode.STANDARD) {
-                                            Text(
-                                                "Disponível no modo Pronúncia",
-                                                style = MaterialTheme.typography.bodySmall,
-                                            )
-                                        }
-                                    }
-                                },
-                                leadingIcon = { Icon(Icons.Outlined.PlayCircle, contentDescription = null) },
-                                trailingIcon = {
-                                    Switch(
-                                        checked = autoplayEnabled,
-                                        enabled = studyMode == StudyMode.PRONUNCIATION,
-                                        onCheckedChange = if (studyMode == StudyMode.PRONUNCIATION) { enabled ->
-                                            autoplayEnabled = enabled
-                                            deckPreferences.setAutoplayEnabled(state.deckId, enabled)
-                                        } else null,
-                                    )
-                                },
-                                onClick = {
-                                    if (studyMode == StudyMode.PRONUNCIATION) {
-                                        autoplayEnabled = !autoplayEnabled
-                                        deckPreferences.setAutoplayEnabled(state.deckId, autoplayEnabled)
-                                    }
-                                },
+                            Icon(
+                                Icons.Outlined.MoreVert,
+                                contentDescription = "Mais opções",
+                                tint = if (showCardMenu) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
                             )
                         }
                     }
@@ -454,6 +403,225 @@ fun StudyScreen(
             },
             onDismiss = { showVoiceDialog = false },
         )
+    }
+
+    if (showCardMenu) {
+        val voiceIndex = speechEngineState.voices.indexOfFirst { it.name == speechEngineState.selectedVoiceName }
+        val voiceLabel = if (voiceIndex >= 0) "Voz ${voiceIndex + 1}" else "Padrão"
+        StudyOptionsBottomSheet(
+            currentCard = currentCard,
+            studyMode = studyMode,
+            autoplayEnabled = autoplayEnabled,
+            selectedVoiceLabel = voiceLabel,
+            onEditCard = { cardId ->
+                showCardMenu = false
+                onEditCard(cardId)
+            },
+            onVoiceClick = {
+                showCardMenu = false
+                showVoiceDialog = true
+            },
+            onStudyModeClick = {
+                showCardMenu = false
+                showStudyModeDialog = true
+            },
+            onAutoplayChange = { enabled ->
+                autoplayEnabled = enabled
+                deckPreferences.setAutoplayEnabled(state.deckId, enabled)
+            },
+            onDismiss = { showCardMenu = false },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StudyOptionsBottomSheet(
+    currentCard: FlashCard?,
+    studyMode: StudyMode,
+    autoplayEnabled: Boolean,
+    selectedVoiceLabel: String,
+    onEditCard: (Long) -> Unit,
+    onVoiceClick: () -> Unit,
+    onStudyModeClick: () -> Unit,
+    onAutoplayChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 14.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(9.dp),
+                    )
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 32.dp),
+        ) {
+            Text(
+                text = "Opções de estudo",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            )
+
+            // Item 1: Editar card (se houver card ativo)
+            if (currentCard != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEditCard(currentCard.id) }
+                        .padding(vertical = 14.dp, horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = "Editar card",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                )
+
+                // Item 2: Voz
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onVoiceClick)
+                        .padding(vertical = 14.dp, horizontal = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.RecordVoiceOver,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        text = "Voz",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = selectedVoiceLabel,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                )
+            }
+
+            // Item 3: Modo de estudo
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onStudyModeClick)
+                    .padding(vertical = 14.dp, horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.School,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Modo de estudo",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = if (studyMode == StudyMode.STANDARD) "Padrão" else "Pronúncia (ouvir primeiro)",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                thickness = 1.dp,
+            )
+
+            // Item 4: Reproduzir automaticamente
+            val isPronunciation = studyMode == StudyMode.PRONUNCIATION
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .alpha(if (isPronunciation) 1f else 0.55f)
+                    .clickable(enabled = isPronunciation) {
+                        onAutoplayChange(!autoplayEnabled)
+                    }
+                    .padding(vertical = 14.dp, horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PlayCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Reproduzir automaticamente",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = "Disponível no modo Pronúncia",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = autoplayEnabled,
+                    enabled = isPronunciation,
+                    onCheckedChange = if (isPronunciation) onAutoplayChange else null,
+                )
+            }
+        }
     }
 }
 
