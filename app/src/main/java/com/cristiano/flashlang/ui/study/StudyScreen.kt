@@ -64,6 +64,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -95,6 +96,7 @@ import androidx.compose.material.icons.outlined.Replay
 import androidx.compose.material.icons.outlined.SlowMotionVideo
 import androidx.compose.material.icons.outlined.FormatQuote
 import androidx.compose.material.icons.outlined.Headphones
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.importer.ClozeText
@@ -776,62 +778,182 @@ private fun StudyCard(
                         }
                     }
                 } else if (rotation < 90f && pronunciationMode) {
+                    // Topo: Badge de Pronúncia
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            color = MaterialTheme.colorScheme.primaryContainer,
                         ) {
                             Text(
-                                "Ouvir primeiro",
-                                style = MaterialTheme.typography.labelMedium,
+                                text = "Pronúncia",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 12.sp,
+                                ),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             )
                         }
                     }
+
+                    // Centro: Termo revelado, Botão 96x96dp e Pílulas
                     Column(
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false).padding(vertical = 12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false)
+                            .padding(vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
                     ) {
                         if (wordRevealed) {
-                            Text(card.term, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                            Text(
+                                text = card.term,
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                textAlign = TextAlign.Center,
+                            )
                         }
-                        FilledTonalButton(onClick = { onSpeak(card.term) }) {
-                            Icon(Icons.AutoMirrored.Outlined.VolumeUp, contentDescription = "Ouvir termo", modifier = Modifier.size(48.dp))
-                        }
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+
+                        // Botão redondo grande de áudio (96x96dp)
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            onClick = { onSpeak(card.term) },
+                            modifier = Modifier.size(96.dp),
+                            shadowElevation = 4.dp,
                         ) {
-                            TextButton(onClick = { onSpeak(card.term) }) {
-                                Icon(Icons.Outlined.Replay, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Ouvir de novo", maxLines = 1, softWrap = false)
-                            }
-                            TextButton(onClick = { onSpeakSlow(card.term) }) {
-                                Icon(Icons.Outlined.SlowMotionVideo, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Ouvir devagar", maxLines = 1, softWrap = false)
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Outlined.VolumeUp,
+                                    contentDescription = "Ouvir termo",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(40.dp),
+                                )
                             }
                         }
+
+                        // Pílulas: Ouvir de novo e Ouvir devagar
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Ouvir de novo (.pill)
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                onClick = { onSpeak(card.term) },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Replay,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = "Ouvir de novo",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+
+                            // Ouvir devagar (.pill)
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                onClick = { onSpeakSlow(card.term) },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.SlowMotionVideo,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = "Ouvir devagar",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                        }
+
+                        // Pílula Mostrar palavra (.pill com contorno sutil)
                         if (!wordRevealed) {
-                            TextButton(onClick = onRevealWord) {
-                                Icon(Icons.Outlined.Visibility, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Mostrar palavra")
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Transparent,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                                onClick = onRevealWord,
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Visibility,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = "Mostrar palavra",
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    )
+                                }
                             }
                         }
                     }
-                    Text(
-                        "Repita em voz alta e toque no card para conferir",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                    )
+
+                    // Base: Dica (.hint com microfone)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Mic,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = "Repita em voz alta e toque no card para conferir",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 } else if (rotation < 90f) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
