@@ -83,6 +83,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cristiano.flashlang.data.model.DeckListItem
 import com.cristiano.flashlang.ui.theme.BadgeAmberBackgroundDark
@@ -408,17 +410,14 @@ fun HomeScreen(
     deckIdToDelete?.let { deckId ->
         val item = decks.firstOrNull { it.deck.id == deckId }
         if (item != null) {
-            AlertDialog(
-                onDismissRequest = { deckIdToDelete = null },
-                title = { Text("Excluir baralho?") },
-                text = { Text("O baralho ${item.deck.name} e seus cards serão excluídos.") },
-                confirmButton = {
-                    TextButton(onClick = {
-                        viewModel.deleteDeck(deckId)
-                        deckIdToDelete = null
-                    }) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+            DeleteDeckConfirmationDialog(
+                deckName = item.deck.name,
+                cardCount = item.cardCount,
+                onConfirm = {
+                    viewModel.deleteDeck(deckId)
+                    deckIdToDelete = null
                 },
-                dismissButton = { TextButton(onClick = { deckIdToDelete = null }) { Text("Cancelar") } },
+                onDismiss = { deckIdToDelete = null },
             )
         }
     }
@@ -1003,6 +1002,104 @@ private fun CustomSheetRadioButton(selected: Boolean) {
                         shape = CircleShape,
                     )
             )
+        }
+    }
+}
+
+@Composable
+private fun DeleteDeckConfirmationDialog(
+    deckName: String,
+    cardCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x9E05060C))
+                .clickable(onClick = onDismiss),
+            contentAlignment = Alignment.Center,
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .clickable(enabled = false) {},
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                shadowElevation = 16.dp,
+            ) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                ) {
+                    Text(
+                        text = "Excluir baralho?",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    val cardsLabel = if (cardCount == 1) "1 card será removido" else "$cardCount cards serão removidos"
+                    Text(
+                        text = "\"$deckName\" e seus $cardsLabel. Essa ação não pode ser desfeita.",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 14.sp,
+                            lineHeight = 21.sp,
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = RoundedCornerShape(10.dp),
+                        ) {
+                            Text(
+                                text = "Cancelar",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        val dangerRed = Color(0xFFFF5467)
+                        val dangerRedBg = Color(0x26FF5467)
+                        Button(
+                            onClick = onConfirm,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = dangerRedBg,
+                                contentColor = dangerRed,
+                            ),
+                            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
+                        ) {
+                            Text(
+                                text = "Excluir",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
