@@ -45,6 +45,10 @@ Cada tarefa foi enviada ao Codex como um prompt isolado, seguida de revisão do 
 | C1b | Escala tipográfica completa Material 3 | Configuração dos 15 papéis tipográficos em `Type.kt` (Display, Headline, Title, Body, Label) com `FontFamily.Default`, otimizados para termos de vocabulário, transcrições IPA e frases cloze |
 | C1c | Escala de formas e espaçamentos | Criação de `Shape.kt` (cantos de 4dp a 28dp) e `Spacing.kt` (tokens de 0dp a 32dp via `MaterialTheme.spacing`), integrados ao `FlashLangTheme` |
 | C2b | Redesenho visual premium da tela de estudo | Cabeçalho de progresso duplo com LinearProgressIndicator; StudyCard com efeito empilhado (stacked cards), pills e divisores; grade 2x2 de botões com tons container (Errei, Difícil, Bom, Fácil); fundo unificado com a TopAppBar e áudio contextual de exemplo no verso |
+| C3a | Redesign da HomeScreen (Meus baralhos) | Implementação pixel-perfect do Grupo 1 do HTML: TopBar com faísca de prompts, chips em pills, Hero banner "Para revisar hoje" com contador de 32sp, seções colapsáveis com chevron, linhas de baralho com cantos de 14dp e badges ovais (âmbar/verde), e Extended FAB (18dp) |
+| C2e | Redesign de Gerenciar baralho e Editar card | Implementação pixel-perfect no Compose: ManageCardsScreen com busca em pílula (999dp), contadores de progresso, term rows com divisores, menu popup (.popup em 200dp, cantos 14dp e --surface-2) e Extended FAB (18dp); CardEditorScreen com controles segmentados (.seg) em grade de 2 colunas, inputs com cantos de 10dp e labels superiores (12sp), botões Salvar (14dp) e Excluir card (.btn-danger); criação de docs/IMPLEMENTATION_PROGRESS.md |
+| C2f | Redesign das telas de Importação e Backup | Implementação pixel-perfect no Compose: ImportScreen com caixa monoespaçada 13sp (260dp), grade 2 colunas de botões tonais (Colar e Arquivo), card reativo com check verde "JSON válido" e botão largo na base; BackupScreen com hero banner 20dp, checkbox de progresso de estudo e modal customizado 24dp "Exportação pronta" (.dialog com scrim); atualização de docs/IMPLEMENTATION_PROGRESS.md |
+
 
 
 Documentação: `README.md` atualizado até a Tarefa 26 (não menciona ainda o Backup).

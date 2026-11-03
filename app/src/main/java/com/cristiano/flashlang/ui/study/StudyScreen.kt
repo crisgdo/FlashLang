@@ -385,10 +385,10 @@ fun StudyScreen(
                             Text("Próximo", maxLines = 1, softWrap = false)
                         }
                     }
-                } else {
+                } else if (state.isFlipped) {
                     StudyRatingBar(
                         card = card,
-                        enabled = state.isFlipped && !state.isSaving,
+                        enabled = !state.isSaving,
                         onRate = viewModel::rateCurrentCard,
                     )
                 }
@@ -902,16 +902,14 @@ private fun StudyCard(
                                     )
                                 }
                             }
-                            val audioTarget = if (card.example.isNotBlank()) card.example else card.term
-                            val audioDesc = if (card.example.isNotBlank()) "Ouvir frase de exemplo" else "Ouvir"
                             Surface(
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                                onClick = { onSpeak(audioTarget) },
+                                onClick = { onSpeak(card.term) },
                             ) {
                                 Icon(
                                     Icons.AutoMirrored.Outlined.VolumeUp,
-                                    contentDescription = audioDesc,
+                                    contentDescription = "Ouvir",
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.padding(8.dp).size(20.dp),
                                 )

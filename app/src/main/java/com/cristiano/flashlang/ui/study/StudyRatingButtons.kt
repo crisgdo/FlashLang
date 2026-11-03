@@ -1,35 +1,34 @@
 package com.cristiano.flashlang.ui.study
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BarChart
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.cristiano.flashlang.data.model.Card as FlashCard
 import com.cristiano.flashlang.data.scheduler.CardScheduleState
 import com.cristiano.flashlang.data.scheduler.ReviewRating
 import com.cristiano.flashlang.data.scheduler.Scheduler
-import com.cristiano.flashlang.ui.theme.extendedColors
+import com.cristiano.flashlang.ui.theme.BadgeAmberBackgroundDark
+import com.cristiano.flashlang.ui.theme.BadgeAmberBackgroundLight
+import com.cristiano.flashlang.ui.theme.BadgeAmberTextDark
+import com.cristiano.flashlang.ui.theme.BadgeAmberTextLight
+import com.cristiano.flashlang.ui.theme.BadgeGreenBackgroundDark
+import com.cristiano.flashlang.ui.theme.BadgeGreenBackgroundLight
+import com.cristiano.flashlang.ui.theme.BadgeGreenTextDark
+import com.cristiano.flashlang.ui.theme.BadgeGreenTextLight
 import kotlin.math.roundToInt
 
 fun formatPredictedInterval(
@@ -69,6 +68,17 @@ fun formatIntervalDays(days: Int): String {
     }
 }
 
+fun formatRatingSubtitle(card: FlashCard, rating: ReviewRating): String {
+    val interval = formatPredictedInterval(card, rating)
+    return when {
+        rating == ReviewRating.AGAIN -> "10 min"
+        interval.endsWith("d") -> "${interval.dropLast(1)} d"
+        interval.endsWith("m") -> "${interval.dropLast(1)} m"
+        interval.endsWith("a") -> "${interval.dropLast(1)} a"
+        else -> interval
+    }
+}
+
 @Composable
 fun StudyRatingBar(
     card: FlashCard,
@@ -76,6 +86,12 @@ fun StudyRatingBar(
     onRate: (ReviewRating) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isDark = isSystemInDarkTheme()
+    val amberBg = if (isDark) BadgeAmberBackgroundDark else BadgeAmberBackgroundLight
+    val amberText = if (isDark) BadgeAmberTextDark else BadgeAmberTextLight
+    val greenBg = if (isDark) BadgeGreenBackgroundDark else BadgeGreenBackgroundLight
+    val greenText = if (isDark) BadgeGreenTextDark else BadgeGreenTextLight
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -86,8 +102,7 @@ fun StudyRatingBar(
         ) {
             StudyRatingCardButton(
                 title = "Errei",
-                subtitle = "Em breve • ${formatPredictedInterval(card, ReviewRating.AGAIN)}",
-                icon = Icons.Outlined.Close,
+                subtitle = formatRatingSubtitle(card, ReviewRating.AGAIN),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 enabled = enabled,
@@ -96,10 +111,9 @@ fun StudyRatingBar(
             )
             StudyRatingCardButton(
                 title = "Difícil",
-                subtitle = "Rever depois • ${formatPredictedInterval(card, ReviewRating.HARD)}",
-                icon = Icons.Outlined.BarChart,
-                containerColor = MaterialTheme.extendedColors.warningContainer,
-                contentColor = MaterialTheme.extendedColors.onWarningContainer,
+                subtitle = formatRatingSubtitle(card, ReviewRating.HARD),
+                containerColor = amberBg,
+                contentColor = amberText,
                 enabled = enabled,
                 onClick = { onRate(ReviewRating.HARD) },
                 modifier = Modifier.weight(1f),
@@ -111,8 +125,7 @@ fun StudyRatingBar(
         ) {
             StudyRatingCardButton(
                 title = "Bom",
-                subtitle = "Com esforço • ${formatPredictedInterval(card, ReviewRating.GOOD)}",
-                icon = Icons.Outlined.Check,
+                subtitle = formatRatingSubtitle(card, ReviewRating.GOOD),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 enabled = enabled,
@@ -121,10 +134,9 @@ fun StudyRatingBar(
             )
             StudyRatingCardButton(
                 title = "Fácil",
-                subtitle = "Sem esforço • ${formatPredictedInterval(card, ReviewRating.EASY)}",
-                icon = Icons.Outlined.Star,
-                containerColor = MaterialTheme.extendedColors.successContainer,
-                contentColor = MaterialTheme.extendedColors.onSuccessContainer,
+                subtitle = formatRatingSubtitle(card, ReviewRating.EASY),
+                containerColor = greenBg,
+                contentColor = greenText,
                 enabled = enabled,
                 onClick = { onRate(ReviewRating.EASY) },
                 modifier = Modifier.weight(1f),
@@ -137,7 +149,6 @@ fun StudyRatingBar(
 private fun StudyRatingCardButton(
     title: String,
     subtitle: String,
-    icon: ImageVector,
     containerColor: Color,
     contentColor: Color,
     enabled: Boolean,
@@ -147,45 +158,36 @@ private fun StudyRatingCardButton(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = containerColor,
         contentColor = contentColor,
         modifier = modifier
-            .defaultMinSize(minHeight = 56.dp)
             .alpha(if (enabled) 1f else 0.45f),
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.size(20.dp),
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = contentColor,
+                maxLines = 1,
             )
-            Column(
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor,
-                    maxLines = 1,
-                    softWrap = false,
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = contentColor.copy(alpha = 0.85f),
-                    maxLines = 1,
-                    softWrap = false,
-                )
-            }
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+                color = contentColor.copy(alpha = 0.85f),
+                maxLines = 1,
+            )
         }
     }
 }
