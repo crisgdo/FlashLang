@@ -25,9 +25,9 @@
 | **Grupo 1: Início** | `HomeScreen.kt` | • Hero banner 20dp com contagem 32sp bold<br>• Filtro por chips em pílula<br>• Seções colapsáveis com chevron animado<br>• Linhas de baralho 14dp com badges cápsula<br>• Extended FAB 18dp com glow sutil | **Concluído** (C3a) |
 | **Grupo 1: Gerenciar** | `ManageCardsScreen.kt` | • Barra de busca em pílula (`CircleShape`, fundo `surface`)<br>• Linha de contadores dinâmicos (total e para revisar hoje)<br>• Term rows com divisores e setas de navegação<br>• Menu suspenso (Novo card, Renomear)<br>• Extended FAB "Estudar" (18dp) | **Concluído** (C2e) |
 | **Grupo 2: Editar card** | `CardEditorScreen.kt` | • Controles segmentados `.seg` em 2 colunas (Formato e Tipo)<br>• Inputs `.input` com cantos de 10dp e labels superiores (12sp `muted`)<br>• Dica contextual para formato Lacuna<br>• Botão Salvar `.btn-primary` (14dp)<br>• Botão Excluir `.btn-danger` com borda avermelhada e confirmação | **Concluído** (C2e) |
+| **Grupo 3: Importação** | `ImportScreen.kt` | • Caixa de texto monoespaçada 13sp (260dp, cantos 10dp)<br>• Grade 2 colunas de botões tonais (Colar e Arquivo)<br>• Card reativo com check verde "JSON válido"<br>• Botão primário largo "Importar baralho" (14dp)<br>• Diálogo de resolução de duplicados | **Concluído** (C2f) |
+| **Backup & Ajustes** | `BackupScreen.kt` | • Hero banner 20dp com contagem de baralhos, cards e prompts<br>• Checkbox de progresso de estudo em container surface<br>• Botões verticais (Exportar tudo, Só baralhos, Só prompts)<br>• Botão tonal Restaurar de arquivo<br>• Modal customizado 24dp "Exportação pronta" | **Concluído** (C2f) |
 | **Grupo 3: Prompts** | `PromptsScreen.kt`<br>`PromptDetailScreen.kt`<br>`UserPromptEditorScreen.kt` | • Seção "Meus prompts" e "Prompts prontos"<br>• Cards com tag de categoria<br>• Bloco de visualização de prompt mono/copiável<br>• Botão de cópia e atalho para importar | *Pendente* |
-| **Grupo 3: Importação** | `ImportScreen.kt` | • Dropzone tracejada (`.drop`) com suporte a colagem e seleção de JSON<br>• Prévia com título e total de cards<br>• Seleção de categoria | *Pendente* |
-| **Backup & Ajustes** | `BackupScreen.kt` | • Botão de exportação completa<br>• Restauração de arquivo com aviso<br>• Estatísticas do banco | *Pendente* |
 
 ---
 
@@ -38,7 +38,8 @@
 | **Mudar Categoria** | `NOVA · Mudar categoria` (Sheet com radio buttons) | `HomeScreen.kt` / `ChangeCategorySheet` | *Pendente* |
 | **Opções de Estudo** | `NOVA · Opções de estudo` (Sheet com editar, voz, modo de estudo) | `StudyScreen.kt` | *Pendente* |
 | **Seletor de Voz TTS** | `NOVA · Selecionar voz` (Sheet com vozes do sistema e botão testar) | `StudyScreen.kt` | *Pendente* |
-| **Popup de Baralho** | Menu rápido (Gerenciar, Exportar, Categoria, Excluir) | `HomeScreen.kt` | Integrado via DropdownMenu |
+| **Popup de Baralho** | Menu rápido (Gerenciar, Exportar, Categoria, Excluir) | `HomeScreen.kt` / `ManageCardsScreen.kt` | **Concluído** (.popup e .mi) |
+| **Exportação Pronta** | Modal customizado com salvar, compartilhar e cancelar | `BackupScreen.kt` | **Concluído** (C2f) |
 | **Diálogo Excluir Card** | Alerta de confirmação irreversível | `CardEditorScreen.kt` | **Concluído** |
 
 ---
