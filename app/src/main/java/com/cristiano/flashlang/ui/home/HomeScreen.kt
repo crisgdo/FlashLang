@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Backup
@@ -33,8 +34,10 @@ import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -597,6 +600,9 @@ private fun HomeDeckRow(
         onClick = onClick,
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surface,
+        border = if (menuExpanded) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+        } else null,
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
@@ -658,40 +664,111 @@ private fun HomeDeckRow(
                     Icon(
                         Icons.Outlined.MoreVert,
                         contentDescription = "Mais opções",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        tint = if (menuExpanded) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        },
                         modifier = Modifier.size(18.dp),
                     )
                 }
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { menuExpanded = false },
+                    modifier = Modifier.width(200.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    shadowElevation = 8.dp,
+                    tonalElevation = 0.dp,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Gerenciar") },
-                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null) },
-                        onClick = { menuExpanded = false; onManage() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Exportar") },
-                        leadingIcon = { Icon(Icons.Outlined.Share, contentDescription = null) },
-                        onClick = { menuExpanded = false; onExport() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Categoria") },
-                        leadingIcon = { Icon(Icons.Outlined.Folder, contentDescription = null) },
-                        onClick = { menuExpanded = false; onCategory() },
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text("Excluir", color = MaterialTheme.colorScheme.error) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Outlined.Delete,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
+                        text = {
+                            Text(
+                                text = "Gerenciar",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
                             )
                         },
-                        onClick = { menuExpanded = false; onDelete() },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.List,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onManage()
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Exportar",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Upload,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onExport()
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Categoria",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.LocalOffer,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onCategory()
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    )
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = "Excluir",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onDelete()
+                        },
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     )
                 }
             }
