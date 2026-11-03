@@ -1,6 +1,8 @@
 package com.cristiano.flashlang.ui.home
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -29,6 +31,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Backup
 import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.Edit
@@ -39,19 +42,24 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -418,7 +426,7 @@ fun HomeScreen(
     deckIdToCategorize?.let { deckId ->
         val item = decks.firstOrNull { it.deck.id == deckId }
         if (item != null) {
-            DeckCategoryDialog(
+            DeckCategoryBottomSheet(
                 deckId = deckId,
                 currentCategory = item.deck.category,
                 categories = categoryNames,
@@ -778,8 +786,9 @@ private fun HomeDeckRow(
 
 private data class DeckCategorySection(val category: String, val decks: List<DeckListItem>)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeckCategoryDialog(
+private fun DeckCategoryBottomSheet(
     deckId: Long,
     currentCategory: String?,
     categories: List<String>,
@@ -787,42 +796,214 @@ private fun DeckCategoryDialog(
     onSave: (String?) -> Unit,
 ) {
     var selectedCategory by rememberSaveable(deckId) { mutableStateOf(currentCategory) }
-    var newCategory by rememberSaveable(deckId) { mutableStateOf("") }
-    AlertDialog(
+    var isAddingNewCategory by rememberSaveable(deckId) { mutableStateOf(false) }
+    var newCategoryText by rememberSaveable(deckId) { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        title = { Text("Categoria do baralho") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                CategoryChoice("Sem categoria", selectedCategory == null) { selectedCategory = null }
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp, bottom = 14.dp)
+                    .size(width = 36.dp, height = 4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(9.dp),
+                    )
+            )
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp),
+        ) {
+            Text(
+                text = "Categoria do baralho",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp),
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState()),
+            ) {
                 categories.forEach { category ->
-                    CategoryChoice(category, selectedCategory.equals(category, ignoreCase = true)) { selectedCategory = category }
+                    val isSelected = !isAddingNewCategory && selectedCategory.equals(category, ignoreCase = true)
+                    CategorySheetItem(
+                        label = category,
+                        selected = isSelected,
+                        onClick = {
+                            isAddingNewCategory = false
+                            selectedCategory = category
+                        },
+                    )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                        thickness = 1.dp,
+                    )
                 }
-                OutlinedTextField(
-                    value = newCategory,
-                    onValueChange = { newCategory = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Nova categoria") },
-                    singleLine = true,
+
+                val isUncategorizedSelected = !isAddingNewCategory && selectedCategory.isNullOrBlank()
+                CategorySheetItem(
+                    label = "Sem categoria",
+                    selected = isUncategorizedSelected,
+                    onClick = {
+                        isAddingNewCategory = false
+                        selectedCategory = null
+                    },
+                )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f),
+                    thickness = 1.dp,
+                )
+
+                if (!isAddingNewCategory) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                isAddingNewCategory = true
+                            }
+                            .padding(vertical = 14.dp, horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "Nova categoria",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedTextField(
+                            value = newCategoryText,
+                            onValueChange = { newCategoryText = it },
+                            placeholder = { Text("Nome da nova categoria", fontSize = 14.sp) },
+                            singleLine = true,
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    isAddingNewCategory = false
+                                    newCategoryText = ""
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.Close,
+                                        contentDescription = "Cancelar nova categoria",
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = {
+                    val finalCategory = if (isAddingNewCategory) {
+                        newCategoryText.trim().takeIf(String::isNotEmpty)
+                    } else {
+                        selectedCategory
+                    }
+                    onSave(finalCategory)
+                },
+                enabled = !isAddingNewCategory || newCategoryText.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            ) {
+                Text(
+                    text = "Salvar",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    ),
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(newCategory.trim().takeIf(String::isNotEmpty) ?: selectedCategory) }) { Text("Salvar") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
-    )
+        }
+    }
 }
 
 @Composable
-private fun CategoryChoice(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun CategorySheetItem(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelect),
+            .clickable(onClick = onClick)
+            .padding(vertical = 14.dp, horizontal = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        RadioButton(selected = selected, onClick = onSelect)
-        Text(label)
+        CustomSheetRadioButton(selected = selected)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
+private fun CustomSheetRadioButton(selected: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .border(
+                width = 2.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary,
+                        shape = CircleShape,
+                    )
+            )
+        }
     }
 }
 
